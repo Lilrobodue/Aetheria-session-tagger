@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Aetheria — Session Tagger</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=JetBrains+Mono:wght@300;400&display=swap');
+:root{--bg:#06060c;--bg2:#0a0810;--bg3:#0f0a14;--bdr:#1a1520;--dim:#3a3030;--mut:#4a4030;--sub:#5a4a3a;--txt:#e0d8cc;--gld:#d4a574;--grn:#4A7C59;--red:#C45C5C;--pur:#7B50D4;--blu:#5048C4;--mag:#A840B8;--ora:#C47A14}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--txt);font-family:'Cormorant Garamond',Georgia,serif;min-height:100vh;max-width:480px;margin:0 auto}
+.mono{font-family:'JetBrains Mono',monospace}
+
+.hdr{text-align:center;padding:16px 12px 8px;border-bottom:1px solid var(--bdr)}
+.hdr h1{font-size:18px;font-weight:300;color:var(--gld);letter-spacing:.12em}
+.hdr .sub{font-size:9px;color:var(--dim);letter-spacing:.15em;text-transform:uppercase;margin-top:2px}
+
+.tabs{display:flex;border-bottom:1px solid var(--bdr);position:sticky;top:0;background:var(--bg);z-index:10}
+.tab{flex:1;padding:10px 4px;text-align:center;font-size:11px;color:var(--dim);letter-spacing:.06em;border-bottom:2px solid transparent;cursor:pointer}
+.tab.on{color:var(--gld);border-bottom-color:var(--gld)}
+
+.content{padding:12px}
+.card{background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:12px;margin-bottom:10px}
+.card h2{font-size:10px;color:var(--mut);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+
+/* Quick tag buttons */
+.cond-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.cond-btn{padding:12px 8px;border-radius:8px;border:1.5px solid var(--bdr);background:var(--bg3);color:var(--sub);font-family:inherit;font-size:12px;cursor:pointer;transition:all .2s;text-align:center}
+.cond-btn:hover{border-color:var(--gld)}
+.cond-btn.selected{border-width:2px}
+.cond-btn .cb-icon{font-size:18px;display:block;margin-bottom:4px}
+.cond-btn .cb-label{font-size:11px;font-weight:500}
+.cond-btn .cb-sub{font-size:9px;color:var(--dim);margin-top:2px}
+
+/* Sliders */
+.slider-group{margin-bottom:10px}
+.slider-label{font-size:10px;color:var(--sub);letter-spacing:.05em;margin-bottom:3px;display:flex;justify-content:space-between}
+.slider-wrap{display:flex;align-items:center;gap:6px}
+.slider-wrap input[type=range]{flex:1;accent-color:var(--gld)}
+.slider-val{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--gld);min-width:20px;text-align:center}
+
+/* Activity chips */
+.chip-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px}
+.chip{padding:5px 10px;border-radius:12px;border:1px solid var(--bdr);background:var(--bg3);color:var(--sub);font-size:10px;cursor:pointer;transition:all .2s}
+.chip.on{border-color:var(--gld);color:var(--gld);background:var(--gld)11}
+
+/* Notes */
+textarea{width:100%;background:var(--bg3);border:1px solid var(--bdr);color:var(--txt);padding:8px;border-radius:6px;font-family:inherit;font-size:12px;resize:vertical;min-height:44px}
+
+/* Buttons */
+.btn{display:block;width:100%;padding:12px;border-radius:6px;border:1px solid var(--gld);background:transparent;color:var(--gld);font-size:13px;font-family:inherit;letter-spacing:.06em;cursor:pointer;margin-top:8px}
+.btn:hover{background:var(--gld);color:var(--bg)}
+.btn-grn{border-color:var(--grn);color:var(--grn)}
+.btn-grn:hover{background:var(--grn);color:var(--bg)}
+.btn-sm{padding:6px 12px;width:auto;display:inline-block;font-size:10px;margin:0}
+.btn-red{border-color:var(--red);color:var(--red)}
+
+/* Session log */
+.log-entry{border-left:3px solid var(--bdr);padding:8px 0 8px 10px;margin-bottom:10px}
+.log-date{font-size:10px;color:var(--dim);margin-bottom:2px}
+.log-cond{font-size:12px;font-weight:500;margin-bottom:2px}
+.log-metrics{display:flex;gap:10px;flex-wrap:wrap;font-size:10px;color:var(--sub);margin-bottom:3px}
+.log-metric{font-family:'JetBrains Mono',monospace}
+.log-notes{font-size:11px;color:var(--sub);font-style:italic;margin-top:3px}
+
+/* Import */
+.import-zone{border:2px dashed var(--bdr);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:border-color .2s}
+.import-zone:hover{border-color:var(--gld)}
+.import-zone input{display:none}
+
+/* Stats */
+.stat-row{display:flex;justify-content:space-around;margin:8px 0}
+.stat{text-align:center}
+.stat-val{font-size:22px;font-weight:300}
+.stat-label{font-size:8px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;margin-top:2px}
+
+/* Saved flash */
+.saved{color:var(--grn);font-size:11px;text-align:center;margin-top:6px;opacity:0;transition:opacity .3s}
+.saved.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <h1>AETHERIA</h1>
+  <div class="sub">Session Tagger</div>
+</div>
+<div class="tabs" id="tab-bar">
+  <div class="tab on" data-tab="tag">Tag</div>
+  <div class="tab" data-tab="log">Log</div>
+  <div class="tab" data-tab="data">Data</div>
+</div>
+<div class="content" id="content"></div>
+
+<script>
+// ═══════════════════════════════════════
+// AETHERIA SESSION TAGGER
+// Lightweight session logging — no rigid schedule
+// ═══════════════════════════════════════
+
+const CONDITIONS = [
+  {id:'playlist',label:'Alignment Playlist',icon:'🎵',color:'#5048C4',sub:'Gnosis or custom playlist'},
+  {id:'silent',label:'Silent',icon:'🤫',color:'#8a7b6b',sub:'Muse only, no music'},
+  {id:'breathwork',label:'3-6-9 Breathwork',icon:'🌬',color:'#4A7C59',sub:'27 breaths, no music'},
+  {id:'partner',label:'With Partner',icon:'💜',color:'#A840B8',sub:'Present with a loved one'},
+  {id:'playlist_partner',label:'Playlist + Partner',icon:'🎵💜',color:'#C43A6A',sub:'Alignment playlist with a loved one'},
+  {id:'personal',label:'Personal Music',icon:'🎸',color:'#C47A14',sub:'Your own resonance playlist'},
+];
+const COND_MAP={};CONDITIONS.forEach(c=>COND_MAP[c.id]=c);
+const ACTIVITIES=['Just woke up','Working','Relaxing','Socializing','Exercising','Driving','Stressed','Before bed','Other'];
+
+let state = {
+  tab:'tag',
+  sessions:[], // [{date,condition,sleep,moodBefore,moodAfter,pain,activity,notes,timestamp}]
+  rctSessions:[], // imported EEG data
+  // Current form state
+  form:{condition:null,sleep:5,moodBefore:5,moodAfter:5,pain:1,activity:null,notes:''}
+};
+
+function save(){try{localStorage.setItem('aetheria-tagger',JSON.stringify({sessions:state.sessions,rctSessions:state.rctSessions}));}catch(e){}}
+function load(){
+  try{
+    const s=localStorage.getItem('aetheria-tagger');
+    if(s){const p=JSON.parse(s);state.sessions=p.sessions||[];state.rctSessions=p.rctSessions||[];return true;}
+  }catch(e){}
+  return false;
+}
+
+function getToday(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+// Lunar phase
+function moonPhase(date){
+  const y=date.getFullYear(),m=date.getMonth()+1,d=date.getDate();
+  let c2,e,jd,b;let yr=y;let mo=m;
+  if(mo<3){yr--;mo+=12;}
+  c2=Math.floor(yr/100);b=2-c2+Math.floor(c2/4);
+  jd=Math.floor(365.25*(yr+4716))+Math.floor(30.6001*(mo+1))+d+b-1524.5;
+  const phase=((jd-2451550.1)/29.530588853)%1;
+  const p=phase<0?phase+1:phase;
+  if(p<0.0625)return'🌑 New';if(p<0.1875)return'🌒 Waxing Crescent';
+  if(p<0.3125)return'🌓 First Quarter';if(p<0.4375)return'🌔 Waxing Gibbous';
+  if(p<0.5625)return'🌕 Full';if(p<0.6875)return'🌖 Waning Gibbous';
+  if(p<0.8125)return'🌗 Last Quarter';if(p<0.9375)return'🌘 Waning Crescent';
+  return'🌑 New';
+}
+
+// Match EEG sessions to a date
+function utcToLocalDate(isoStr){
+  if(!isoStr)return null;
+  const d=new Date(isoStr);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function eegForDate(dateStr){
+  return state.rctSessions.filter(s=>s.date&&utcToLocalDate(s.date)===dateStr);
+}
+
+// CSV parser
+function parseRctCSV(text){
+  const lines=text.trim().split('\n');
+  if(lines.length<2)return[];
+  const headers=lines[0].split(',');
+  const sessions=[];
+  for(let i=1;i<lines.length;i++){
+    const row=[];let field='',inQ=false;
+    for(let c=0;c<lines[i].length;c++){
+      const ch=lines[i][c];
+      if(ch==='"')inQ=!inQ;
+      else if(ch===','&&!inQ){row.push(field);field='';}
+      else field+=ch;
+    }
+    row.push(field);
+    const obj={};
+    headers.forEach((h,hi)=>{
+      let v=row[hi]||'';
+      if(v==='NaN'||v==='')v=null;
+      else if(!isNaN(v)&&v!==''&&h!=='date'&&h!=='rx_frequencies')v=+v;
+      obj[h.trim()]=v;
+    });
+    sessions.push(obj);
+  }
+  return sessions;
+}
+
+// ─── Render ───
+function render(){
+  const el=document.getElementById('content');
+  let h='';
+  const f=state.form;
+  const today=getToday();
+  const moon=moonPhase(new Date());
+
+  if(state.tab==='tag'){
+    // Date + moon
+    h+=`<div style="text-align:center;margin-bottom:10px">
+      <div style="font-size:13px;color:var(--txt)">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}</div>
+      <div style="font-size:11px;color:var(--dim)">${moon}</div>
+    </div>`;
+
+    // Condition select
+    h+=`<div class="card"><h2>What did you do?</h2>
+      <div class="cond-grid">
+        ${CONDITIONS.map(c=>`<div class="cond-btn ${f.condition===c.id?'selected':''}" 
+          style="${f.condition===c.id?'border-color:'+c.color+';color:'+c.color+';background:'+c.color+'11':''}" 
+          onclick="pickCond('${c.id}')">
+          <span class="cb-icon">${c.icon}</span>
+          <span class="cb-label">${c.label}</span>
+          <span class="cb-sub">${c.sub}</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+
+    // Quick metrics
+    h+=`<div class="card"><h2>How are you feeling?</h2>
+      <div class="slider-group">
+        <div class="slider-label"><span>Sleep last night</span><span class="mono" style="color:var(--blu)">${f.sleep}/10</span></div>
+        <input type="range" min="1" max="10" value="${f.sleep}" oninput="state.form.sleep=+this.value;render()" style="width:100%;accent-color:#5048C4">
+      </div>
+      <div class="slider-group">
+        <div class="slider-label"><span>Mood before</span><span class="mono" style="color:var(--ora)">${f.moodBefore}/10</span></div>
+        <input type="range" min="1" max="10" value="${f.moodBefore}" oninput="state.form.moodBefore=+this.value;render()" style="width:100%;accent-color:#C47A14">
+      </div>
+      <div class="slider-group">
+        <div class="slider-label"><span>Mood after</span><span class="mono" style="color:var(--gld)">${f.moodAfter}/10</span></div>
+        <input type="range" min="1" max="10" value="${f.moodAfter}" oninput="state.form.moodAfter=+this.value;render()" style="width:100%;accent-color:#d4a574">
+      </div>
+      <div class="slider-group">
+        <div class="slider-label"><span>Pain / symptoms</span><span class="mono" style="color:var(--red)">${f.pain}/10</span></div>
+        <input type="range" min="1" max="10" value="${f.pain}" oninput="state.form.pain=+this.value;render()" style="width:100%;accent-color:#C45C5C">
+      </div>
+    </div>`;
+
+    // Activity
+    h+=`<div class="card"><h2>What were you doing before?</h2>
+      <div class="chip-row">
+        ${ACTIVITIES.map(a=>`<div class="chip ${f.activity===a?'on':''}" onclick="pickActivity('${a}')">${a}</div>`).join('')}
+      </div>
+    </div>`;
+
+    // Notes
+    h+=`<div class="card"><h2>Notes</h2>
+      <textarea id="f-notes" placeholder="Anything notable — observations, what music, how it felt...">${f.notes}</textarea>
+    </div>`;
+
+    // Save
+    h+=`<button class="btn btn-grn" onclick="saveSession()">Save Session Tag</button>`;
+    h+=`<div class="saved" id="save-msg">Saved!</div>`;
+
+    // Today's EEG sessions
+    const todayEeg=eegForDate(today);
+    if(todayEeg.length){
+      h+=`<div class="card" style="margin-top:12px"><h2>Today's EEG Data (${todayEeg.length} session${todayEeg.length>1?'s':''})</h2>`;
+      todayEeg.forEach(s=>{
+        const dur=s.duration_sec?Math.floor(s.duration_sec/60)+'m '+s.duration_sec%60+'s':'—';
+        h+=`<div style="font-size:10px;color:var(--sub);margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--bdr)">
+          <span class="mono" style="color:var(--pur)">${s.peak_coherence||'—'}% peak</span> · 
+          <span class="mono">${s.avg_coherence||'—'}% avg</span> · ${dur} · 
+          Pos ${s.baseline_pos||'?'} → ${s.endstate_pos||'?'}
+          ${s.positions_moved>0?'<span style="color:var(--grn)">+'+s.positions_moved+'</span>':s.positions_moved<0?'<span style="color:var(--red)">'+s.positions_moved+'</span>':''}
+        </div>`;
+      });
+      h+=`</div>`;
+    }
+  }
+
+  // ─── LOG TAB ───
+  if(state.tab==='log'){
+    // Group sessions by date
+    const byDate={};
+    state.sessions.forEach(s=>{
+      const d=s.date||'unknown';
+      if(!byDate[d])byDate[d]=[];
+      byDate[d].push(s);
+    });
+    // Sort dates newest first
+    const dates=Object.keys(byDate).sort().reverse();
+
+    if(!dates.length&&!state.rctSessions.length){
+      h+=`<div style="text-align:center;padding:30px 0;color:var(--sub)">No sessions tagged yet. Go to Tag to log your first session.</div>`;
+    }
+
+    // Also show dates with EEG data but no tags
+    const allDates=new Set([...dates]);
+    state.rctSessions.forEach(s=>{if(s.date)allDates.add(utcToLocalDate(s.date));});
+    const sortedDates=[...allDates].sort().reverse();
+
+    h+=`<div style="font-size:10px;color:var(--dim);text-align:center;margin-bottom:10px">${state.sessions.length} tagged · ${state.rctSessions.length} EEG sessions imported</div>`;
+
+    sortedDates.forEach(date=>{
+      const tags=byDate[date]||[];
+      const eeg=eegForDate(date);
+      const dateObj=new Date(date+'T00:00:00');
+      const dateStr=dateObj.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+      const moon=moonPhase(dateObj);
+
+      h+=`<div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font-size:12px;color:var(--txt)">${dateStr}</div>
+          <div style="font-size:10px;color:var(--dim)">${moon}</div>
+        </div>`;
+
+      // Tagged sessions
+      tags.forEach(t=>{
+        const c=COND_MAP[t.condition];
+        const moodDelta=t.moodAfter-t.moodBefore;
+        h+=`<div class="log-entry" style="border-color:${c?c.color:'var(--bdr)'}">
+          <div class="log-cond" style="color:${c?c.color:'var(--txt)'}">${c?c.icon+' ':''} ${c?c.label:t.condition}</div>
+          <div class="log-metrics">
+            <span>Sleep: <span class="log-metric" style="color:var(--blu)">${t.sleep}</span></span>
+            <span>Mood: <span class="log-metric" style="color:var(--ora)">${t.moodBefore}</span>→<span class="log-metric" style="color:var(--gld)">${t.moodAfter}</span> <span style="color:${moodDelta>=0?'var(--grn)':'var(--red)'}">${moodDelta>=0?'+':''}${moodDelta}</span></span>
+            <span>Pain: <span class="log-metric" style="color:var(--red)">${t.pain}</span></span>
+            ${t.activity?`<span>${t.activity}</span>`:''}
+          </div>
+          ${t.notes?`<div class="log-notes">"${t.notes}"</div>`:''}
+        </div>`;
+      });
+
+      // EEG sessions for this date
+      if(eeg.length){
+        eeg.forEach(s=>{
+          const dur=s.duration_sec?Math.floor(s.duration_sec/60)+'m '+s.duration_sec%60+'s':'—';
+          h+=`<div style="font-size:10px;color:var(--sub);padding:4px 0 4px 10px;border-left:3px solid var(--pur);margin-bottom:4px">
+            🧠 <span class="mono" style="color:var(--pur)">${s.peak_coherence||'—'}%</span> peak · 
+            <span class="mono">${s.avg_coherence||'—'}%</span> avg · ${dur}
+            ${s.baseline_geo?' · '+s.baseline_geo:''}→${s.endstate_geo||''}
+            ${s.positions_moved!=null?(s.positions_moved>0?' <span style="color:var(--grn)">+'+s.positions_moved+'</span>':' <span style="color:var(--red)">'+s.positions_moved+'</span>'):''}
+          </div>`;
+        });
+      }
+
+      if(!tags.length&&eeg.length){
+        h+=`<div style="font-size:9px;color:var(--dim);margin-top:4px">EEG data only — no subjective tag for this day</div>`;
+      }
+
+      h+=`</div>`;
+    });
+  }
+
+  // ─── DATA TAB ───
+  if(state.tab==='data'){
+    // Import
+    h+=`<div class="card">
+      <h2>Import RCT Session Data</h2>
+      <div class="import-zone" onclick="document.getElementById('csv-input').click()">
+        <input type="file" id="csv-input" accept=".csv" onchange="importCSV(this)">
+        <div style="font-size:12px;color:var(--gld);margin-bottom:4px">Tap to import CSV</div>
+        <div style="font-size:10px;color:var(--dim)">From aetheriarct.com History tab</div>
+      </div>
+      ${state.rctSessions.length?`<div style="font-size:10px;color:var(--grn);text-align:center;margin-top:6px">${state.rctSessions.length} EEG sessions loaded</div>`:''}
+    </div>`;
+
+    // Stats
+    if(state.sessions.length||state.rctSessions.length){
+      const tags=state.sessions;
+      const n=tags.length;
+      const condCounts={};tags.forEach(t=>{condCounts[t.condition]=(condCounts[t.condition]||0)+1;});
+
+      h+=`<div class="card"><h2>Overview</h2>
+        <div class="stat-row">
+          <div class="stat"><div class="stat-val" style="color:var(--gld)">${n}</div><div class="stat-label">Sessions Tagged</div></div>
+          <div class="stat"><div class="stat-val" style="color:var(--pur)">${state.rctSessions.length}</div><div class="stat-label">EEG Sessions</div></div>
+          <div class="stat"><div class="stat-val" style="color:var(--blu)">${new Set(tags.map(t=>t.date)).size}</div><div class="stat-label">Days Active</div></div>
+        </div>
+      </div>`;
+
+      // Condition breakdown
+      if(n){
+        h+=`<div class="card"><h2>Condition Breakdown</h2>`;
+        CONDITIONS.forEach(c=>{
+          const count=condCounts[c.id]||0;
+          if(!count)return;
+          const pct=count/n*100;
+          const entries=tags.filter(t=>t.condition===c.id);
+          const avgMoodDelta=entries.reduce((s,t)=>s+(t.moodAfter-t.moodBefore),0)/entries.length;
+          h+=`<div style="display:flex;align-items:center;gap:8px;margin:6px 0">
+            <span style="font-size:14px">${c.icon}</span>
+            <span style="font-size:11px;color:${c.color};width:90px">${c.label}</span>
+            <div style="flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:${c.color};border-radius:4px"></div>
+            </div>
+            <span class="mono" style="font-size:10px;color:var(--sub)">${count}</span>
+            <span class="mono" style="font-size:10px;color:${avgMoodDelta>=0?'var(--grn)':'var(--red)'}">${avgMoodDelta>=0?'+':''}${avgMoodDelta.toFixed(1)}</span>
+          </div>`;
+        });
+        h+=`</div>`;
+      }
+    }
+
+    // Export
+    h+=`<div class="card"><h2>Export</h2>
+      <div style="display:flex;gap:6px">
+        <button class="btn" style="flex:1" onclick="exportData('csv')">Export CSV</button>
+        <button class="btn" style="flex:1" onclick="exportData('json')">Export JSON</button>
+      </div>
+    </div>`;
+
+    // Clear
+    h+=`<div style="display:flex;gap:6px;margin-top:8px">
+      <button class="btn btn-red btn-sm" style="flex:1" onclick="if(confirm('Clear all imported EEG data?')){state.rctSessions=[];save();render();}">Clear EEG Data</button>
+      <button class="btn btn-red btn-sm" style="flex:1" onclick="if(confirm('Clear all tagged sessions?')){state.sessions=[];save();render();}">Clear Tags</button>
+    </div>`;
+  }
+
+  el.innerHTML=h;
+}
+
+// ─── Actions ───
+window.pickCond=function(id){state.form.condition=id;render();};
+window.pickActivity=function(a){state.form.activity=state.form.activity===a?null:a;render();};
+
+window.saveSession=function(){
+  const f=state.form;
+  const notesEl=document.getElementById('f-notes');
+  if(notesEl)f.notes=notesEl.value;
+  if(!f.condition){alert('Pick a condition first!');return;}
+  state.sessions.push({
+    date:getToday(),
+    condition:f.condition,
+    sleep:f.sleep,
+    moodBefore:f.moodBefore,
+    moodAfter:f.moodAfter,
+    pain:f.pain,
+    activity:f.activity,
+    notes:f.notes,
+    moon:moonPhase(new Date()),
+    timestamp:new Date().toISOString()
+  });
+  // Reset form for next session
+  state.form={condition:null,sleep:f.sleep,moodBefore:5,moodAfter:5,pain:f.pain,activity:null,notes:''};
+  save();
+  render();
+  setTimeout(()=>{const m=document.getElementById('save-msg');if(m){m.classList.add('show');setTimeout(()=>m.classList.remove('show'),2000);}},50);
+};
+
+window.importCSV=function(input){
+  if(!input.files||!input.files[0])return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const newSessions=parseRctCSV(e.target.result);
+    const existing=new Set(state.rctSessions.map(s=>s.date+'|'+s.duration_sec));
+    let added=0;
+    newSessions.forEach(s=>{
+      const key=s.date+'|'+s.duration_sec;
+      if(!existing.has(key)){state.rctSessions.push(s);existing.add(key);added++;}
+    });
+    state.rctSessions.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    save();render();
+    alert(added+' new session(s) imported. Total: '+state.rctSessions.length);
+  };
+  reader.readAsText(input.files[0]);
+  input.value='';
+};
+
+window.exportData=function(fmt){
+  const ts=new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+  let blob,filename;
+  if(fmt==='json'){
+    blob=new Blob([JSON.stringify({
+      system:'Aetheria Session Tagger',
+      export_date:new Date().toISOString(),
+      tagged_sessions:state.sessions,
+      eeg_sessions:state.rctSessions
+    },null,2)],{type:'application/json'});
+    filename=`aetheria_sessions_${ts}.json`;
+  } else {
+    const headers='date,condition,moon,sleep,mood_before,mood_after,mood_change,pain,activity,notes,best_peak_coh,best_avg_coh,best_start_pos,best_end_pos,best_pos_moved';
+    const rows=state.sessions.map(s=>{
+      const eeg=eegForDate(s.date);
+      const best=eeg.sort((a,b)=>(b.peak_coherence||0)-(a.peak_coherence||0))[0];
+      return [s.date,s.condition,s.moon||'',s.sleep,s.moodBefore,s.moodAfter,
+        s.moodAfter-s.moodBefore,s.pain,s.activity||'',
+        '"'+(s.notes||'').replace(/"/g,"'")+'"',
+        best?best.peak_coherence:'',best?best.avg_coherence:'',
+        best?best.baseline_pos:'',best?best.endstate_pos:'',
+        best?best.positions_moved:''
+      ].join(',');
+    });
+    blob=new Blob([headers+'\n'+rows.join('\n')],{type:'text/csv'});
+    filename=`aetheria_sessions_${ts}.csv`;
+  }
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+// ─── Tab switching ───
+function go(tab){state.tab=tab;render();}
+document.querySelectorAll('#tab-bar .tab').forEach(t=>{
+  t.addEventListener('click',function(){
+    document.querySelectorAll('#tab-bar .tab').forEach(x=>x.classList.remove('on'));
+    this.classList.add('on');
+    go(this.getAttribute('data-tab'));
+  });
+});
+
+// ─── Boot ───
+load();
+render();
+</script>
+</body>
+</html>
