@@ -77,6 +77,32 @@ textarea{width:100%;background:var(--bg3);border:1px solid var(--bdr);color:var(
 /* Saved flash */
 .saved{color:var(--grn);font-size:11px;text-align:center;margin-top:6px;opacity:0;transition:opacity .3s}
 .saved.show{opacity:1}
+
+/* Links tab */
+.section-label{font-size:9px;color:var(--dim);letter-spacing:.2em;text-transform:uppercase;text-align:center;margin:20px 0 10px;position:relative}
+.section-label::before,.section-label::after{content:'';position:absolute;top:50%;width:50px;height:1px;background:var(--bdr)}
+.section-label::before{right:calc(50% + 50px)}
+.section-label::after{left:calc(50% + 50px)}
+.lnk{display:flex;align-items:center;gap:12px;background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:12px 14px;margin-bottom:6px;text-decoration:none;color:var(--txt);transition:all .2s;position:relative}
+.lnk:hover{border-color:var(--gld);transform:translateY(-1px)}
+.lnk::after{content:'→';position:absolute;right:14px;color:var(--dim);font-size:12px;transition:all .2s}
+.lnk:hover::after{color:var(--gld);right:10px}
+.lnk-icon{width:36px;height:36px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.lnk h3{font-size:13px;font-weight:500;letter-spacing:.02em}
+.lnk p{font-size:10px;color:var(--sub);line-height:1.3}
+.li-gld{background:linear-gradient(135deg,#d4a57422,#d4a57408);border:1px solid #d4a57433}
+.li-pur{background:linear-gradient(135deg,#7B50D422,#7B50D408);border:1px solid #7B50D433}
+.li-mag{background:linear-gradient(135deg,#A840B822,#A840B808);border:1px solid #A840B833}
+.li-blu{background:linear-gradient(135deg,#5048C422,#5048C408);border:1px solid #5048C433}
+.li-grn{background:linear-gradient(135deg,#4A7C5922,#4A7C5908);border:1px solid #4A7C5933}
+.li-cor{background:linear-gradient(135deg,#C43A6A22,#C43A6A08);border:1px solid #C43A6A33}
+.li-ora{background:linear-gradient(135deg,#C47A1422,#C47A1408);border:1px solid #C47A1433}
+.sim-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
+.sim-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:12px;text-decoration:none;color:var(--txt);transition:all .2s;text-align:center}
+.sim-card:hover{border-color:var(--blu);transform:translateY(-1px)}
+.sim-card .si{font-size:20px;margin-bottom:4px}
+.sim-card h3{font-size:11px;font-weight:500;line-height:1.3}
+.sim-card p{font-size:8px;color:var(--dim);margin-top:2px}
 </style>
 </head>
 <body>
@@ -88,6 +114,7 @@ textarea{width:100%;background:var(--bg3);border:1px solid var(--bdr);color:var(
   <div class="tab on" data-tab="tag">Tag</div>
   <div class="tab" data-tab="log">Log</div>
   <div class="tab" data-tab="data">Data</div>
+  <div class="tab" data-tab="link">Links</div>
 </div>
 <div class="content" id="content"></div>
 
@@ -400,6 +427,95 @@ function render(){
       <button class="btn btn-red btn-sm" style="flex:1" onclick="if(confirm('Clear all imported EEG data?')){state.rctSessions=[];save();render();}">Clear EEG Data</button>
       <button class="btn btn-red btn-sm" style="flex:1" onclick="if(confirm('Clear all tagged sessions?')){state.sessions=[];save();render();}">Clear Tags</button>
     </div>`;
+  }
+
+  // ─── LINK TAB ───
+  if(state.tab==='link'){
+    h+=`<div class="section-label">Apps & Tools</div>
+
+    <a class="lnk" href="http://aetheriasos.com/" target="_blank">
+      <div class="lnk-icon li-gld">🔮</div>
+      <div><h3>Sophia — Aetheria Oracle</h3><p>Oracle shaman — tarot, numerology, astrology & more</p></div>
+    </a>
+    <a class="lnk" href="https://aetheria432.com" target="_blank">
+      <div class="lnk-icon li-gld">🎵</div>
+      <div><h3>Aetheria 432Hz Player</h3><p>27-frequency harmonic healing system</p></div>
+    </a>
+    <a class="lnk" href="https://aetheriarct.com" target="_blank">
+      <div class="lnk-icon li-pur">🧠</div>
+      <div><h3>Aetheria RCT</h3><p>Muse 2 EEG neuro-adaptive coherence training</p></div>
+    </a>
+
+    <div class="section-label">Books</div>
+
+    <a class="lnk" href="https://a.co/d/079tM297" target="_blank">
+      <div class="lnk-icon li-mag">📕</div>
+      <div><h3>Aetheria</h3><p>The frequency healing system — foundational text</p></div>
+    </a>
+    <a class="lnk" href="https://a.co/d/0c83ZGEu" target="_blank">
+      <div class="lnk-icon li-blu">📘</div>
+      <div><h3>The Golden Thread</h3><p>One equation across all scales — E=hf as universal key</p></div>
+    </a>
+    <a class="lnk" href="https://a.co/d/0ckEN0Qs" target="_blank">
+      <div class="lnk-icon li-ora">📙</div>
+      <div><h3>Cosmic Rhythms</h3><p>How sun, moon & earth shape your biology</p></div>
+    </a>
+    <a class="lnk" href="https://a.co/d/04Y1pUtE" target="_blank">
+      <div class="lnk-icon li-cor">📗</div>
+      <div><h3>SFB — A TBI Guide</h3><p>Navigating traumatic brain injury recovery</p></div>
+    </a>
+
+    <div class="section-label">Music</div>
+
+    <a class="lnk" href="https://open.spotify.com/artist/4CXB2ctrUCvInDQkKDhw4q" target="_blank">
+      <div class="lnk-icon li-grn">🎧</div>
+      <div><h3>Aetheria on Spotify</h3><p>Frequency-tuned healing music — 432Hz</p></div>
+    </a>
+
+    <div class="section-label">Interactive Simulations</div>
+
+    <div class="sim-grid">
+      <a class="sim-card" href="https://lilrobodue.github.io/Lewis-Vortex-Model/" target="_blank">
+        <div class="si">🌀</div><h3>Lewis Vortex Model</h3><p>Formation Theory</p>
+      </a>
+      <a class="sim-card" href="https://lilrobodue.github.io/Unified-Scale-Navigator/" target="_blank">
+        <div class="si">🔬</div><h3>Unified Scale Navigator</h3><p>Quantum to cosmic</p>
+      </a>
+      <a class="sim-card" href="https://lilrobodue.github.io/HRV-Coherence-Visualizer/" target="_blank">
+        <div class="si">💓</div><h3>HRV Coherence Visualizer</h3><p>Heart rate variability</p>
+      </a>
+      <a class="sim-card" href="https://lilrobodue.github.io/Schumann-Biology-Simulator/" target="_blank">
+        <div class="si">🌍</div><h3>Schumann Biology Simulator</h3><p>Earth's resonance</p>
+      </a>
+      <a class="sim-card" href="https://lilrobodue.github.io/Cellular-Voltage-Frequency-Model/" target="_blank">
+        <div class="si">⚡</div><h3>Cellular Voltage Model</h3><p>Frequency & cell health</p>
+      </a>
+      <a class="sim-card" href="https://lilrobodue.github.io/Galactic-Scale-Vortex-Formation/" target="_blank">
+        <div class="si">🌌</div><h3>Galactic Vortex Formation</h3><p>Cosmic scale structure</p>
+      </a>
+    </div>
+
+    <div class="section-label">Community & Social</div>
+
+    <a class="lnk" href="https://discord.gg/ddR3MfgCsM" target="_blank">
+      <div class="lnk-icon li-blu">💬</div>
+      <div><h3>Th3 L0unG3 — Discord</h3><p>365+ healing frequency songs · community · resources</p></div>
+    </a>
+    <a class="lnk" href="https://www.youtube.com/@Aetheria432" target="_blank">
+      <div class="lnk-icon li-cor">▶</div>
+      <div><h3>YouTube</h3><p>Aetheria content, demos, and explorations</p></div>
+    </a>
+    <a class="lnk" href="https://x.com/TheyCallmeJobo" target="_blank">
+      <div class="lnk-icon li-ora">𝕏</div>
+      <div><h3>X / Twitter</h3><p>@TheyCallmeJobo — thoughts, updates, frequencies</p></div>
+    </a>
+
+    <div class="section-label">Contact</div>
+
+    <a class="lnk" href="mailto:Aetheria432@pm.me">
+      <div class="lnk-icon li-gld">✉</div>
+      <div><h3>Aetheria432@pm.me</h3><p>Questions, collaborations, research inquiries</p></div>
+    </a>`;
   }
 
   el.innerHTML=h;
