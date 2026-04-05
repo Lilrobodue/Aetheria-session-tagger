@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="24" fill="#06060c"/>
+  <circle cx="96" cy="80" r="36" fill="none" stroke="#d4a574" stroke-width="2.5" opacity="0.6"/>
+  <circle cx="96" cy="80" r="20" fill="none" stroke="#d4a574" stroke-width="2" opacity="0.8"/>
+  <circle cx="96" cy="80" r="6" fill="#d4a574"/>
+  <line x1="96" y1="44" x2="96" y2="36" stroke="#d4a574" stroke-width="1.5" opacity="0.4"/>
+  <line x1="96" y1="116" x2="96" y2="124" stroke="#d4a574" stroke-width="1.5" opacity="0.4"/>
+  <line x1="60" y1="80" x2="52" y2="80" stroke="#d4a574" stroke-width="1.5" opacity="0.4"/>
+  <line x1="132" y1="80" x2="140" y2="80" stroke="#d4a574" stroke-width="1.5" opacity="0.4"/>
+  <text x="96" y="152" text-anchor="middle" fill="#d4a574" font-family="Georgia,serif" font-size="16" font-weight="300" letter-spacing="3">AETHERIA</text>
+</svg>
