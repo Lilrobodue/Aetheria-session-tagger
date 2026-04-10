@@ -208,7 +208,7 @@ function parseRctCSV(text){
     headers.forEach((h,hi)=>{
       let v=row[hi]||'';
       if(v==='NaN'||v==='')v=null;
-      else if(!isNaN(v)&&v!==''&&h!=='date'&&h!=='rx_frequencies')v=+v;
+      else if(!isNaN(v)&&v!==''&&!['date','rx_frequencies','timestamp','i_ching_name'].includes(h.trim()))v=+v;
       obj[h.trim()]=v;
     });
     sessions.push(obj);
@@ -285,13 +285,7 @@ function render(){
     if(todayEeg.length){
       h+=`<div class="card" style="margin-top:12px"><h2>Today's EEG Data (${todayEeg.length} session${todayEeg.length>1?'s':''})</h2>`;
       todayEeg.forEach(s=>{
-        const dur=s.duration_sec?Math.floor(s.duration_sec/60)+'m '+s.duration_sec%60+'s':'—';
-        h+=`<div style="font-size:10px;color:var(--sub);margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--bdr)">
-          <span class="mono" style="color:var(--pur)">${s.peak_coherence||'—'}% peak</span> · 
-          <span class="mono">${s.avg_coherence||'—'}% avg</span> · ${dur} · 
-          Pos ${s.baseline_pos||'?'} → ${s.endstate_pos||'?'}
-          ${s.positions_moved>0?'<span style="color:var(--grn)">+'+s.positions_moved+'</span>':s.positions_moved<0?'<span style="color:var(--red)">'+s.positions_moved+'</span>':''}
-        </div>`;
+        h+=renderEegDetail(s);
       });
       h+=`</div>`;
     }
@@ -352,13 +346,9 @@ function render(){
       // EEG sessions for this date
       if(eeg.length){
         eeg.forEach(s=>{
-          const dur=s.duration_sec?Math.floor(s.duration_sec/60)+'m '+s.duration_sec%60+'s':'—';
-          h+=`<div style="font-size:10px;color:var(--sub);padding:4px 0 4px 10px;border-left:3px solid var(--pur);margin-bottom:4px">
-            🧠 <span class="mono" style="color:var(--pur)">${s.peak_coherence||'—'}%</span> peak · 
-            <span class="mono">${s.avg_coherence||'—'}%</span> avg · ${dur}
-            ${s.baseline_geo?' · '+s.baseline_geo:''}→${s.endstate_geo||''}
-            ${s.positions_moved!=null?(s.positions_moved>0?' <span style="color:var(--grn)">+'+s.positions_moved+'</span>':' <span style="color:var(--red)">'+s.positions_moved+'</span>'):''}
-          </div>`;
+          h+=`<div style="padding-left:10px;border-left:3px solid var(--pur);margin-bottom:4px">`;
+          h+=renderEegDetail(s);
+          h+=`</div>`;
         });
       }
 
@@ -374,11 +364,11 @@ function render(){
   if(state.tab==='data'){
     // Import
     h+=`<div class="card">
-      <h2>Import RCT Session Data</h2>
+      <h2>Import Session Data</h2>
       <div class="import-zone" onclick="document.getElementById('csv-input').click()">
-        <input type="file" id="csv-input" accept=".csv" onchange="importCSV(this)">
+        <input type="file" id="csv-input" accept=".csv" multiple onchange="importCSVMulti(this)">
         <div style="font-size:12px;color:var(--gld);margin-bottom:4px">Tap to import CSV</div>
-        <div style="font-size:10px;color:var(--dim)">From aetheriarct.com History tab</div>
+        <div style="font-size:10px;color:var(--dim)">RCT export · Sophia session · Muse 2 or Athena</div>
       </div>
       ${state.rctSessions.length?`<div style="font-size:10px;color:var(--grn);text-align:center;margin-top:6px">${state.rctSessions.length} EEG sessions loaded</div>`:''}
     </div>`;
@@ -449,7 +439,7 @@ function render(){
     </a>
     <a class="lnk" href="https://aetheriarct.com" target="_blank">
       <div class="lnk-icon li-pur">🧠</div>
-      <div><h3>Aetheria RCT</h3><p>Muse 2 EEG neuro-adaptive coherence training</p></div>
+      <div><h3>Aetheria RCT</h3><p>Muse 2 / Athena EEG neuro-adaptive coherence training</p></div>
     </a>
 
     <div class="section-label">Books</div>
@@ -555,21 +545,170 @@ window.saveSession=function(){
   setTimeout(()=>{const m=document.getElementById('save-msg');if(m){m.classList.add('show');setTimeout(()=>m.classList.remove('show'),2000);}},50);
 };
 
+// Aggregate a Sophia timeline CSV into a single session summary
+function aggregateSophiaCSV(rows){
+  if(!rows.length)return null;
+  const first=rows[0], last=rows[rows.length-1];
+  const t0=new Date(first.timestamp), t1=new Date(last.timestamp);
+  const durSec=Math.round((t1-t0)/1000);
+  const cohVals=rows.map(r=>r.coherence_pct).filter(v=>v!=null);
+  const focVals=rows.map(r=>r.focus_pct).filter(v=>v!=null);
+  const medVals=rows.map(r=>r.meditation_pct).filter(v=>v!=null);
+  const avg=arr=>arr.length?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length):null;
+  const bandAvg=key=>{const v=rows.map(r=>r[key]).filter(x=>x!=null);return avg(v);};
+  return {
+    date: first.timestamp,
+    duration_sec: durSec,
+    device_type: 'sophia-session',
+    avg_coherence: avg(cohVals),
+    peak_coherence: cohVals.length?Math.max(...cohVals):null,
+    baseline_pos: first.position,
+    baseline_freq: first.frequency_hz,
+    baseline_geo: first.geometry,
+    baseline_dominant: null,
+    endstate_pos: last.position,
+    endstate_freq: last.frequency_hz,
+    endstate_geo: last.geometry,
+    endstate_dominant: null,
+    positions_moved: (last.position!=null&&first.position!=null)?last.position-first.position:null,
+    avg_focus: avg(focVals),
+    avg_meditation: avg(medVals),
+    avg_delta: bandAvg('delta_pct'),
+    avg_theta: bandAvg('theta_pct'),
+    avg_alpha: bandAvg('alpha_pct'),
+    avg_beta: bandAvg('beta_pct'),
+    avg_gamma: bandAvg('gamma_pct'),
+    top_state: modeOf(rows.map(r=>r.state).filter(Boolean)),
+    top_geometry: modeOf(rows.map(r=>r.geometry).filter(Boolean)),
+    readings: rows.length
+  };
+}
+
+// Get most common value in an array
+function modeOf(arr){
+  if(!arr.length)return null;
+  const counts={};arr.forEach(v=>{counts[v]=(counts[v]||0)+1;});
+  return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0][0];
+}
+
+// Render a single EEG session detail block (shared between Tag + Log tabs)
+function renderEegDetail(s){
+  const dur=s.duration_sec?Math.floor(s.duration_sec/60)+'m '+s.duration_sec%60+'s':'—';
+  const isAthena=s.device_type&&s.device_type.includes('athena');
+  const isSophia=s.device_type==='sophia-session';
+  const device=isAthena?'Athena':isSophia?'Sophia':'Muse';
+  const deviceColor=isAthena?'var(--mag)':isSophia?'var(--gld)':'var(--pur)';
+
+  let h=`<div style="font-size:10px;color:var(--sub);margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--bdr)">`;
+
+  // Header: device badge + coherence + duration
+  h+=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+    <span class="mono" style="font-size:8px;padding:1px 5px;border-radius:3px;border:1px solid ${deviceColor};color:${deviceColor}">${device}</span>
+    <span class="mono" style="color:var(--pur)">${s.peak_coherence||'—'}% peak</span> ·
+    <span class="mono">${s.avg_coherence||'—'}% avg</span> · ${dur}
+  </div>`;
+
+  // Position journey
+  h+=`<div style="margin-bottom:2px">
+    ${s.baseline_geo||'Pos '+(s.baseline_pos||'?')} → ${s.endstate_geo||'Pos '+(s.endstate_pos||'?')}
+    ${s.positions_moved>0?' <span style="color:var(--grn)">+'+s.positions_moved+'</span>':s.positions_moved<0?' <span style="color:var(--red)">'+s.positions_moved+'</span>':''}
+  </div>`;
+
+  // Dominant brainwave shift (Athena RCT)
+  if(s.baseline_dominant||s.endstate_dominant){
+    h+=`<div style="margin-bottom:2px">
+      <span style="color:var(--dim)">Dominant:</span> ${s.baseline_dominant||'?'} → ${s.endstate_dominant||'?'}
+    </div>`;
+  }
+
+  // Heart rate (Athena)
+  if(s.heart_rate!=null){
+    h+=`<span style="color:var(--red)">♥ </span><span class="mono">${s.heart_rate} bpm</span>  `;
+  }
+
+  // fNIRS summary (Athena) — show average SQI across channels
+  if(s.fnirs_sqi_LI!=null||s.fnirs_sqi_RI!=null){
+    const sqis=[s.fnirs_sqi_LI,s.fnirs_sqi_RI,s.fnirs_sqi_LO,s.fnirs_sqi_RO].filter(v=>v!=null);
+    const avgSqi=sqis.length?Math.round(sqis.reduce((a,b)=>a+b,0)/sqis.length*100):null;
+    if(avgSqi!=null){
+      const sqiColor=avgSqi>=70?'var(--grn)':avgSqi>=40?'var(--ora)':'var(--red)';
+      h+=`<span style="color:var(--dim)">fNIRS:</span> <span class="mono" style="color:${sqiColor}">${avgSqi}% SQI</span>  `;
+    }
+  }
+
+  // Brainwave bands (Sophia sessions)
+  if(s.avg_delta!=null||s.avg_gamma!=null){
+    h+=`<div style="margin-top:3px;display:flex;gap:6px;flex-wrap:wrap">`;
+    const bands=[
+      {k:'avg_delta',l:'δ',c:'#5048C4'},{k:'avg_theta',l:'θ',c:'#7B50D4'},
+      {k:'avg_alpha',l:'α',c:'#4A7C59'},{k:'avg_beta',l:'β',c:'#C47A14'},
+      {k:'avg_gamma',l:'γ',c:'#A840B8'}
+    ];
+    bands.forEach(b=>{
+      if(s[b.k]!=null) h+=`<span class="mono" style="color:${b.c}">${b.l}${s[b.k]}%</span>`;
+    });
+    h+=`</div>`;
+  }
+
+  // Focus / meditation (Sophia)
+  if(s.avg_focus!=null||s.avg_meditation!=null){
+    h+=`<div style="margin-top:2px">`;
+    if(s.avg_focus!=null) h+=`<span style="color:var(--blu)">Focus ${s.avg_focus}%</span>  `;
+    if(s.avg_meditation!=null) h+=`<span style="color:var(--grn)">Med ${s.avg_meditation}%</span>  `;
+    if(s.top_state) h+=`<span style="color:var(--dim)">${s.top_state}</span>`;
+    h+=`</div>`;
+  }
+
+  h+=`</div>`;
+  return h;
+}
+
+// Detect CSV type by headers
+function detectCSVType(headerLine){
+  const h=headerLine.toLowerCase();
+  if(h.includes('coherence_pct')&&h.includes('timestamp')&&h.includes('geometry'))return 'sophia';
+  return 'rct';
+}
+
+window.importCSVMulti=function(input){
+  if(!input.files||!input.files.length)return;
+  Array.from(input.files).forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=function(e){importCSVText(e.target.result);};
+    reader.readAsText(file);
+  });
+  input.value='';
+};
+
+function importCSVText(text){
+  const firstLine=text.trim().split('\n')[0];
+  const csvType=detectCSVType(firstLine);
+
+  let newSessions;
+  if(csvType==='sophia'){
+    const rows=parseRctCSV(text);
+    const session=aggregateSophiaCSV(rows);
+    newSessions=session?[session]:[];
+  } else {
+    newSessions=parseRctCSV(text);
+  }
+
+  const existing=new Set(state.rctSessions.map(s=>s.date+'|'+s.duration_sec));
+  let added=0;
+  newSessions.forEach(s=>{
+    const key=s.date+'|'+s.duration_sec;
+    if(!existing.has(key)){state.rctSessions.push(s);existing.add(key);added++;}
+  });
+  state.rctSessions.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  save();render();
+  const label=csvType==='sophia'?'Sophia session':'RCT session';
+  alert(added+' new '+label+'(s) imported. Total: '+state.rctSessions.length);
+}
+
 window.importCSV=function(input){
   if(!input.files||!input.files[0])return;
   const reader=new FileReader();
-  reader.onload=function(e){
-    const newSessions=parseRctCSV(e.target.result);
-    const existing=new Set(state.rctSessions.map(s=>s.date+'|'+s.duration_sec));
-    let added=0;
-    newSessions.forEach(s=>{
-      const key=s.date+'|'+s.duration_sec;
-      if(!existing.has(key)){state.rctSessions.push(s);existing.add(key);added++;}
-    });
-    state.rctSessions.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-    save();render();
-    alert(added+' new session(s) imported. Total: '+state.rctSessions.length);
-  };
+  reader.onload=function(e){importCSVText(e.target.result);};
   reader.readAsText(input.files[0]);
   input.value='';
 };
@@ -586,16 +725,23 @@ window.exportData=function(fmt){
     },null,2)],{type:'application/json'});
     filename=`aetheria_sessions_${ts}.json`;
   } else {
-    const headers='date,condition,moon,sleep,mood_before,mood_after,mood_change,pain,activity,notes,best_peak_coh,best_avg_coh,best_start_pos,best_end_pos,best_pos_moved';
+    const headers='date,condition,moon,sleep,mood_before,mood_after,mood_change,pain,activity,notes,device_type,best_peak_coh,best_avg_coh,best_start_pos,best_end_pos,best_pos_moved,dominant_shift,heart_rate,avg_focus,avg_meditation,avg_delta,avg_theta,avg_alpha,avg_beta,avg_gamma';
     const rows=state.sessions.map(s=>{
       const eeg=eegForDate(s.date);
       const best=eeg.sort((a,b)=>(b.peak_coherence||0)-(a.peak_coherence||0))[0];
       return [s.date,s.condition,s.moon||'',s.sleep,s.moodBefore,s.moodAfter,
         s.moodAfter-s.moodBefore,s.pain,s.activity||'',
         '"'+(s.notes||'').replace(/"/g,"'")+'"',
+        best?best.device_type||'':'',
         best?best.peak_coherence:'',best?best.avg_coherence:'',
         best?best.baseline_pos:'',best?best.endstate_pos:'',
-        best?best.positions_moved:''
+        best?best.positions_moved:'',
+        best?(best.baseline_dominant||'')+'>'+(best.endstate_dominant||''):'',
+        best?best.heart_rate||'':'',
+        best?best.avg_focus||'':'',best?best.avg_meditation||'':'',
+        best?best.avg_delta||'':'',best?best.avg_theta||'':'',
+        best?best.avg_alpha||'':'',best?best.avg_beta||'':'',
+        best?best.avg_gamma||'':''
       ].join(',');
     });
     blob=new Blob([headers+'\n'+rows.join('\n')],{type:'text/csv'});
