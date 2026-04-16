@@ -724,55 +724,103 @@ function labSessionDate(meta){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
-function validateImportedSession(obj){
+function detectFormat(obj){
+  if(obj.aetheria_export_version&&obj.export_type==='session_summary_for_tagger')return'structured_export';
+  if(obj.streams&&typeof obj.streams==='object'&&obj.metadata&&obj.metadata.sessionId&&typeof obj.metadata.sessionId==='string')return'native_save';
+  return'unknown';
+}
+
+function validateStructuredExport(obj){
   const errors=[];
-  if(!obj||typeof obj!=='object'){errors.push('not_json');return{valid:false,errors};}
   if(!obj.metadata||typeof obj.metadata!=='object'||!obj.metadata.sessionId||typeof obj.metadata.sessionId!=='string'){
-    errors.push('missing_session_id');
+    errors.push('structured_missing_session_id');
   }
-  if(!obj.streams||typeof obj.streams!=='object'){
-    errors.push('missing_streams');
-  } else if(!Array.isArray(obj.streams.coherence)){
-    errors.push('missing_coherence');
+  if(!obj.time_series||typeof obj.time_series!=='object'){
+    errors.push('structured_missing_time_series');
+  }
+  if(!obj.summary||typeof obj.summary!=='object'){
+    errors.push('structured_missing_summary');
+  }
+  if(!Array.isArray(obj.state_transitions)){
+    errors.push('structured_missing_state_transitions');
+  }
+  if(!Array.isArray(obj.prescriptions)){
+    errors.push('structured_missing_prescriptions');
   }
   return{valid:errors.length===0,errors};
 }
 
-function filterSessionStreams(fullSession){
-  const kept=['coherence','bcs','state','prescription','audio','haptic'];
-  const filtered={};
-  kept.forEach(k=>{filtered[k]=fullSession.streams[k]||[];});
-  return{metadata:fullSession.metadata,streams:filtered};
+function validateNativeSave(obj){
+  const errors=[];
+  if(!obj.metadata||typeof obj.metadata!=='object'||!obj.metadata.sessionId||typeof obj.metadata.sessionId!=='string'){
+    errors.push('native_missing_session_id');
+  }
+  if(!obj.streams||typeof obj.streams!=='object'){
+    errors.push('native_missing_streams');
+  } else if(!Array.isArray(obj.streams.coherence)){
+    errors.push('native_missing_coherence');
+  }
+  return{valid:errors.length===0,errors};
 }
 
-function computeSessionSummary(filtered){
-  const meta=filtered.metadata;
-  const coh=filtered.streams.coherence||[];
-  const bcsArr=filtered.streams.bcs||[];
-  const st=filtered.streams.state||[];
-  const rx=filtered.streams.prescription||[];
+function convertNativeToCanonical(nativeObj){
+  const meta=nativeObj.metadata;
+  const streams=nativeObj.streams;
+  const startMs=meta.startTime?new Date(meta.startTime).getTime():null;
+  const endMs=meta.endTime?new Date(meta.endTime).getTime():null;
+  const durationSec=(startMs&&endMs)?Math.round((endMs-startMs)/1000):0;
 
-  const startT=meta.startTime?new Date(meta.startTime).getTime():null;
-  const endT=meta.endTime?new Date(meta.endTime).getTime():null;
-  const durationSec=(startT&&endT)?Math.round((endT-startT)/1000):0;
+  const session={sessionId:meta.sessionId,startTime:meta.startTime,endTime:meta.endTime,duration_seconds:durationSec,softwareVersion:meta.softwareVersion||'1.0.0'};
+
+  const coh=streams.coherence||[];
+  const bcsArr=streams.bcs||[];
+  const st=streams.state||[];
+  const rx=streams.prescription||[];
+
+  const time_series={
+    coherence_t:coh.map(c=>c.t),coherence_tcs:coh.map(c=>c.tcs),coherence_gut:coh.map(c=>c.gut),
+    coherence_heart:coh.map(c=>c.heart),coherence_head:coh.map(c=>c.head),coherence_plv:coh.map(c=>c.plv),coherence_harm:coh.map(c=>c.harm),
+    bcs_t:bcsArr.map(b=>b.t),bcs_value:bcsArr.map(b=>b.bcs),bcs_kuramoto:bcsArr.map(b=>b.kuramoto),
+    bcs_shared_energy:bcsArr.map(b=>b.sharedEnergy),bcs_mutual_info:bcsArr.map(b=>b.mutualInfo),bcs_phase_transition:bcsArr.map(b=>b.phaseTransition)
+  };
 
   const tcsVals=coh.map(c=>c.tcs).filter(v=>v!=null);
   const peakTCS=tcsVals.length?Math.round(Math.max(...tcsVals)*10)/10:null;
   const meanTCS=tcsVals.length?Math.round(tcsVals.reduce((a,b)=>a+b,0)/tcsVals.length*10)/10:null;
-
   const bcsVals=bcsArr.map(b=>b.bcs).filter(v=>v!=null);
   const peakBCS=bcsVals.length?Math.round(Math.max(...bcsVals)*10)/10:null;
-
+  const meanBCS=bcsVals.length?Math.round(bcsVals.reduce((a,b)=>a+b,0)/bcsVals.length*10)/10:null;
   const ptEntry=bcsArr.find(b=>b.phaseTransition===true);
-  const ptDetected=!!ptEntry;
-  const ptTime=ptEntry?ptEntry.t:null;
-
-  const harmonicLocks=coh.filter(c=>c.harm===1.0).length;
+  const harmVals=coh.map(c=>c.harm).filter(v=>v!=null);
+  const harmOneCount=coh.filter(c=>c.harm===1.0).length;
+  const harmMean=harmVals.length?Math.round(harmVals.reduce((a,b)=>a+b,0)/harmVals.length*1000)/1000:0;
   const cascadeFlips=st.filter(s=>s.reason&&s.reason.toLowerCase().includes('flipped')).length;
   const rxPlayed=rx.filter(r=>r.action==='play').length;
   const closingType=st.some(s=>s.to==='CLOSING')?'graceful':'user_stopped';
 
-  return{durationSec,peakTCS,meanTCS,peakBCS,ptDetected,ptTime,harmonicLocks,cascadeFlips,rxPlayed,closingType};
+  const summary={peak_tcs:peakTCS,mean_tcs:meanTCS,peak_bcs:peakBCS,mean_bcs:meanBCS,
+    phase_transition_detected:!!ptEntry,phase_transition_time_seconds:ptEntry?ptEntry.t:null,
+    harm_one_count:harmOneCount,harm_mean:harmMean,cascade_flips:cascadeFlips,prescriptions_count:rxPlayed,closing_type:closingType};
+
+  return{aetheria_export_version:'1.0',export_type:'session_summary_for_tagger',exported_at:new Date().toISOString(),
+    metadata:meta,session:session,summary:summary,time_series:time_series,state_transitions:st,prescriptions:rx};
+}
+
+function computeSessionSummary(sessionData){
+  const sum=sessionData.summary||{};
+  const ses=sessionData.session;
+  return{
+    durationSec:ses?ses.duration_seconds||0:0,
+    peakTCS:sum.peak_tcs!=null?sum.peak_tcs:null,
+    meanTCS:sum.mean_tcs!=null?sum.mean_tcs:null,
+    peakBCS:sum.peak_bcs!=null?sum.peak_bcs:null,
+    ptDetected:!!sum.phase_transition_detected,
+    ptTime:sum.phase_transition_time_seconds!=null?sum.phase_transition_time_seconds:null,
+    harmonicLocks:sum.harm_one_count||0,
+    cascadeFlips:sum.cascade_flips||0,
+    rxPlayed:sum.prescriptions_count||0,
+    closingType:sum.closing_type||'user_stopped'
+  };
 }
 
 function formatPtTime(t,meta){
@@ -823,29 +871,52 @@ function getLabSessionCount(){
 function importLabJSON(text){
   let obj;
   try{obj=JSON.parse(text);}catch(e){
-    alert("That file couldn't be read as JSON. Make sure you're uploading the file you downloaded from the Coherence Lab (it ends in .json).");
+    alert("That file couldn't be read as JSON. Make sure you uploaded a .json file from the Coherence Lab.");
     return;
   }
-  const v=validateImportedSession(obj);
-  if(!v.valid){
-    const err=v.errors[0];
-    if(err==='missing_session_id')alert("This file isn't an Aetheria session \u2014 missing required field metadata.sessionId. Are you sure it's from the Coherence Lab?");
-    else if(err==='missing_streams')alert("This file doesn't look like a Coherence Lab session \u2014 no streams data found.");
-    else if(err==='missing_coherence')alert("This file doesn't look like a Coherence Lab session \u2014 missing coherence stream data.");
-    else alert("Couldn't import that file. Please check it's a valid Aetheria Coherence Lab session JSON.");
+  if(!obj||typeof obj!=='object'){
+    alert("That file couldn't be read as JSON. Make sure you uploaded a .json file from the Coherence Lab.");
     return;
   }
-  const sessionId=obj.metadata.sessionId;
+  const fmt=detectFormat(obj);
+  if(fmt==='unknown'){
+    alert("This file doesn't look like an Aetheria session \u2014 it's missing both the tagger export format markers and the native save markers. Make sure you downloaded it from the Coherence Lab.");
+    return;
+  }
+  let canonical;
+  if(fmt==='structured_export'){
+    const v=validateStructuredExport(obj);
+    if(!v.valid){
+      const err=v.errors[0];
+      if(err==='structured_missing_session_id')alert("This file appears to be a tagger export but is missing metadata.sessionId. The file may be corrupted.");
+      else if(err==='structured_missing_time_series')alert("This file appears to be a tagger export but has no time_series data.");
+      else if(err==='structured_missing_summary')alert("This file appears to be a tagger export but has no summary data.");
+      else alert("This file appears to be a tagger export but is missing required fields: "+v.errors.join(', '));
+      return;
+    }
+    canonical=obj;
+  } else {
+    const v=validateNativeSave(obj);
+    if(!v.valid){
+      const err=v.errors[0];
+      if(err==='native_missing_session_id')alert("This file appears to be a native Lab session but is missing metadata.sessionId. The file may be corrupted.");
+      else if(err==='native_missing_streams')alert("This file appears to be a native Lab session but has no streams data.");
+      else if(err==='native_missing_coherence')alert("This file appears to be a native Lab session but has no coherence data in streams.");
+      else alert("This file appears to be a native Lab session but is missing required fields: "+v.errors.join(', '));
+      return;
+    }
+    canonical=convertNativeToCanonical(obj);
+  }
+  const sessionId=canonical.metadata.sessionId;
   const existing=getExistingSession(sessionId);
   if(existing){
-    state.importDuplicate={sessionId,importedAt:existing.imported_at,newData:obj,existingRecord:existing};
+    state.importDuplicate={sessionId,importedAt:existing.imported_at,newData:canonical,existingRecord:existing};
     render();
     return;
   }
-  const filtered=filterSessionStreams(obj);
-  storeImportedSession(filtered,null);
-  const summary=computeSessionSummary(filtered);
-  state.lastImportSummary={summary,metadata:filtered.metadata};
+  storeImportedSession(canonical,null);
+  const summary=computeSessionSummary(canonical);
+  state.lastImportSummary={summary,metadata:canonical.metadata};
   render();
 }
 
@@ -981,10 +1052,9 @@ window.exportData=function(fmt){
 
 window.dupReimport=function(){
   const dup=state.importDuplicate;if(!dup)return;
-  const filtered=filterSessionStreams(dup.newData);
-  storeImportedSession(filtered,dup.existingRecord);
-  const summary=computeSessionSummary(filtered);
-  state.lastImportSummary={summary,metadata:filtered.metadata};
+  storeImportedSession(dup.newData,dup.existingRecord);
+  const summary=computeSessionSummary(dup.newData);
+  state.lastImportSummary={summary,metadata:dup.newData.metadata};
   state.importDuplicate=null;
   render();
 };
