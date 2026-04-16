@@ -1,11 +1,15 @@
-const CACHE = 'aetheria-tagger-v5';
+const CACHE = 'aetheria-tagger-v10';
 const SHELL = [
   './',
   './index.html',
   './manifest.json',
   './icons/icon-192.svg',
   './icons/icon-512.svg',
-  './icons/icon-maskable.svg'
+  './icons/icon-maskable.svg',
+  './src/storage/tagger-store.js',
+  './src/import/coherence-lab-import.js',
+  './src/import/sophia-import.js',
+  './src/export/tagger-export.js'
 ];
 
 // Pre-cache the app shell on install

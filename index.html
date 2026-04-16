@@ -11,87 +11,121 @@
 <link rel="apple-touch-icon" href="icons/icon-192.svg">
 <title>Aetheria — Session Tagger</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=JetBrains+Mono:wght@300;400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400&display=swap');
 :root{--bg:#06060c;--bg2:#0a0810;--bg3:#0f0a14;--bdr:#1a1520;--dim:#3a3030;--mut:#4a4030;--sub:#5a4a3a;--txt:#e0d8cc;--gld:#d4a574;--grn:#4A7C59;--red:#C45C5C;--pur:#7B50D4;--blu:#5048C4;--mag:#A840B8;--ora:#C47A14}
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:var(--txt);font-family:'Cormorant Garamond',Georgia,serif;min-height:100vh;max-width:480px;margin:0 auto}
+body{background:var(--bg);color:var(--txt);font-family:'Cormorant Garamond',Georgia,serif;min-height:100vh}
 .mono{font-family:'JetBrains Mono',monospace}
+#app{max-width:900px;margin:0 auto;padding:0 0 40px}
+input,select,textarea{font-family:inherit}
 
-.hdr{text-align:center;padding:16px 12px 8px;border-bottom:1px solid var(--bdr)}
-.hdr h1{font-size:18px;font-weight:300;color:var(--gld);letter-spacing:.12em}
-.hdr .sub{font-size:9px;color:var(--dim);letter-spacing:.15em;text-transform:uppercase;margin-top:2px}
+/* ─── Header ─── */
+.hdr{text-align:center;padding:24px 16px 12px}
+.hdr h1{font-size:22px;font-weight:300;color:var(--gld);letter-spacing:.15em}
+.hdr .subtitle{font-size:13px;color:var(--dim);font-style:italic;font-weight:300;margin-top:4px}
+.hdr-nav{display:flex;justify-content:center;gap:16px;margin-top:8px}
+.hdr-nav a{font-size:10px;color:var(--dim);text-decoration:none;letter-spacing:.08em;cursor:pointer}
+.hdr-nav a:hover{color:var(--gld)}
 
-.tabs{display:flex;border-bottom:1px solid var(--bdr);position:sticky;top:0;background:var(--bg);z-index:10}
-.tab{flex:1;padding:10px 4px;text-align:center;font-size:11px;color:var(--dim);letter-spacing:.06em;border-bottom:2px solid transparent;cursor:pointer}
-.tab.on{color:var(--gld);border-bottom-color:var(--gld)}
+/* ─── Back button ─── */
+.back-bar{padding:10px 16px;border-bottom:1px solid var(--bdr)}
+.back-btn{background:none;border:none;color:var(--dim);font-family:inherit;font-size:12px;cursor:pointer;padding:4px 0;letter-spacing:.04em}
+.back-btn:hover{color:var(--gld)}
 
-.content{padding:12px}
-.card{background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:12px;margin-bottom:10px}
-.card h2{font-size:10px;color:var(--mut);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+/* ─── Common ─── */
+.content{padding:0 16px}
+.card{background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:14px;margin-bottom:10px}
+.card h2{font-size:10px;color:var(--mut);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px}
+.section-title{font-size:9px;color:var(--dim);letter-spacing:.2em;text-transform:uppercase;margin:20px 0 10px}
 
-/* Quick tag buttons */
-.cond-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
-.cond-btn{padding:12px 8px;border-radius:8px;border:1.5px solid var(--bdr);background:var(--bg3);color:var(--sub);font-family:inherit;font-size:12px;cursor:pointer;transition:all .2s;text-align:center}
-.cond-btn:hover{border-color:var(--gld)}
-.cond-btn.selected{border-width:2px}
-.cond-btn .cb-icon{font-size:18px;display:block;margin-bottom:4px}
-.cond-btn .cb-label{font-size:11px;font-weight:500}
-.cond-btn .cb-sub{font-size:9px;color:var(--dim);margin-top:2px}
-
-/* Sliders */
-.slider-group{margin-bottom:10px}
-.slider-label{font-size:10px;color:var(--sub);letter-spacing:.05em;margin-bottom:3px;display:flex;justify-content:space-between}
-.slider-wrap{display:flex;align-items:center;gap:6px}
-.slider-wrap input[type=range]{flex:1;accent-color:var(--gld)}
-.slider-val{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--gld);min-width:20px;text-align:center}
-
-/* Activity chips */
-.chip-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px}
-.chip{padding:5px 10px;border-radius:12px;border:1px solid var(--bdr);background:var(--bg3);color:var(--sub);font-size:10px;cursor:pointer;transition:all .2s}
-.chip.on{border-color:var(--gld);color:var(--gld);background:var(--gld)11}
-
-/* Notes */
-textarea{width:100%;background:var(--bg3);border:1px solid var(--bdr);color:var(--txt);padding:8px;border-radius:6px;font-family:inherit;font-size:12px;resize:vertical;min-height:44px}
-
-/* Buttons */
-.btn{display:block;width:100%;padding:12px;border-radius:6px;border:1px solid var(--gld);background:transparent;color:var(--gld);font-size:13px;font-family:inherit;letter-spacing:.06em;cursor:pointer;margin-top:8px}
+/* ─── Buttons ─── */
+.btn{display:block;width:100%;padding:12px;border-radius:6px;border:1px solid var(--gld);background:transparent;color:var(--gld);font-size:13px;font-family:inherit;letter-spacing:.06em;cursor:pointer;margin-top:8px;text-align:center}
 .btn:hover{background:var(--gld);color:var(--bg)}
-.btn-grn{border-color:var(--grn);color:var(--grn)}
-.btn-grn:hover{background:var(--grn);color:var(--bg)}
+.btn-grn{border-color:var(--grn);color:var(--grn)}.btn-grn:hover{background:var(--grn);color:var(--bg)}
+.btn-red{border-color:var(--red);color:var(--red)}.btn-red:hover{background:var(--red);color:var(--bg)}
+.btn-mag{border-color:var(--mag);color:var(--mag)}.btn-mag:hover{background:var(--mag);color:var(--bg)}
+.btn-blu{border-color:var(--blu);color:var(--blu)}.btn-blu:hover{background:var(--blu);color:var(--bg)}
 .btn-sm{padding:6px 12px;width:auto;display:inline-block;font-size:10px;margin:0}
-.btn-red{border-color:var(--red);color:var(--red)}
+.btn-row{display:flex;gap:8px;margin-top:8px}
+.btn-row .btn{flex:1}
 
-/* Session log */
-.log-entry{border-left:3px solid var(--bdr);padding:8px 0 8px 10px;margin-bottom:10px}
-.log-date{font-size:10px;color:var(--dim);margin-bottom:2px}
-.log-cond{font-size:12px;font-weight:500;margin-bottom:2px}
-.log-metrics{display:flex;gap:10px;flex-wrap:wrap;font-size:10px;color:var(--sub);margin-bottom:3px}
-.log-metric{font-family:'JetBrains Mono',monospace}
-.log-notes{font-size:11px;color:var(--sub);font-style:italic;margin-top:3px}
+/* ─── Home actions ─── */
+.home-actions{display:flex;gap:8px;margin:16px 0}
+.home-actions .btn{margin:0;flex:1;padding:10px 8px;font-size:11px}
 
-/* Import */
-.import-zone{border:2px dashed var(--bdr);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:border-color .2s}
-.import-zone:hover{border-color:var(--gld)}
-.import-zone input{display:none}
+/* ─── History rows ─── */
+.history-row{display:flex;align-items:center;gap:12px;background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:12px 14px;margin-bottom:6px;cursor:pointer;transition:all .15s;text-decoration:none;color:var(--txt)}
+.history-row:hover{border-color:var(--gld);transform:translateY(-1px)}
+.source-badge{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;border:1.5px solid}
+.badge-lab{border-color:var(--blu);color:var(--blu);background:#5048C410}
+.badge-sophia{border-color:var(--mag);color:var(--mag);background:#A840B810}
+.badge-manual{border-color:var(--gld);color:var(--gld);background:#d4a57410}
+.row-body{flex:1;min-width:0}
+.row-date{font-size:11px;color:var(--sub);margin-bottom:2px}
+.row-summary{font-size:12px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row-mood{font-size:11px;font-family:'JetBrains Mono',monospace;flex-shrink:0}
 
-/* Stats */
-.stat-row{display:flex;justify-content:space-around;margin:8px 0}
-.stat{text-align:center}
-.stat-val{font-size:22px;font-weight:300}
-.stat-label{font-size:8px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;margin-top:2px}
+/* ─── Empty state ─── */
+.empty-state{text-align:center;padding:40px 20px;color:var(--sub);font-size:14px;line-height:1.8}
+.empty-state strong{color:var(--gld);font-weight:400}
 
-/* Saved flash */
-.saved{color:var(--grn);font-size:11px;text-align:center;margin-top:6px;opacity:0;transition:opacity .3s}
-.saved.show{opacity:1}
+/* ─── Detail grid ─── */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px}
+@media(max-width:768px){.detail-grid{grid-template-columns:1fr}}
+.detail-panel{background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:16px;align-self:start}
+.detail-panel h2{font-size:10px;color:var(--mut);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px}
 
-/* Links tab */
+/* ─── Form fields ─── */
+.field-group{margin-bottom:12px}
+.field-label{font-size:10px;color:var(--sub);letter-spacing:.05em;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
+.field-label .fval{font-family:'JetBrains Mono',monospace;color:var(--gld);font-size:11px}
+input[type=text],input[type=date],input[type=number],select{width:100%;background:var(--bg3);border:1px solid var(--bdr);color:var(--txt);padding:8px 10px;border-radius:6px;font-size:12px}
+input[type=text]:focus,input[type=date]:focus,input[type=number]:focus,select:focus,textarea:focus{outline:none;border-color:var(--gld)}
+select{appearance:auto}
+textarea{width:100%;background:var(--bg3);border:1px solid var(--bdr);color:var(--txt);padding:8px 10px;border-radius:6px;font-size:12px;resize:vertical;min-height:120px;font-family:inherit}
+input[type=range]{width:100%;accent-color:var(--gld)}
+.mood-computed{font-family:'JetBrains Mono',monospace;font-size:13px;padding:6px 0}
+.saved-flash{color:var(--grn);font-size:12px;text-align:center;padding:8px;opacity:0;transition:opacity .3s}
+.saved-flash.show{opacity:1}
+
+/* ─── Source data display ─── */
+.src-header{font-size:10px;color:var(--mut);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+.src-meta{font-size:11px;color:var(--sub);margin-bottom:3px}
+.src-meta .sv{color:var(--gld);font-family:'JetBrains Mono',monospace}
+.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;margin:8px 0}
+.metric-row{font-size:11px;color:var(--sub);display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bdr)}
+.metric-row:last-child{border-bottom:none}
+.metric-row .mv{color:var(--gld);font-family:'JetBrains Mono',monospace}
+.event-line{font-size:11px;color:var(--sub);padding:3px 0}
+.event-line .eg{color:var(--grn)}
+.rx-item{font-size:10px;color:var(--sub);padding:3px 0;border-bottom:1px solid var(--bdr);font-family:'JetBrains Mono',monospace}
+
+/* ─── Sophia snapshots ─── */
+.snap-card{background:var(--bg3);border:1px solid var(--bdr);border-radius:6px;padding:10px;margin-bottom:6px;cursor:pointer;transition:border-color .15s}
+.snap-card:hover{border-color:var(--mag)}
+.snap-head{display:flex;align-items:center;gap:8px;font-size:11px}
+.snap-head .st{color:var(--gld);font-family:'JetBrains Mono',monospace}
+.snap-detail{margin-top:8px;padding-top:8px;border-top:1px solid var(--bdr);font-size:10px;color:var(--sub)}
+.snap-bands{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.snap-bands span{font-family:'JetBrains Mono',monospace}
+
+/* ─── Import dialogs ─── */
+.import-summary{background:var(--bg2);border:1px solid var(--grn);border-radius:8px;padding:14px;margin-top:10px;text-align:center}
+.import-summary h3{font-size:13px;color:var(--grn);margin-bottom:6px;font-weight:500}
+.import-summary .is-line{font-size:11px;color:var(--sub);margin-bottom:3px}
+.import-summary .is-val{color:var(--gld);font-family:'JetBrains Mono',monospace}
+.import-dup{background:var(--bg2);border:1px solid var(--ora);border-radius:8px;padding:14px;margin-top:10px}
+.import-dup h3{font-size:12px;color:var(--ora);margin-bottom:8px;text-align:center}
+.import-dup p{font-size:10px;color:var(--sub);text-align:center;margin-bottom:8px}
+.import-dup .dup-btns{display:flex;gap:6px}
+
+/* ─── Links ─── */
 .section-label{font-size:9px;color:var(--dim);letter-spacing:.2em;text-transform:uppercase;text-align:center;margin:20px 0 10px;position:relative}
 .section-label::before,.section-label::after{content:'';position:absolute;top:50%;width:50px;height:1px;background:var(--bdr)}
-.section-label::before{right:calc(50% + 50px)}
-.section-label::after{left:calc(50% + 50px)}
+.section-label::before{right:calc(50% + 50px)}.section-label::after{left:calc(50% + 50px)}
 .lnk{display:flex;align-items:center;gap:12px;background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:12px 14px;margin-bottom:6px;text-decoration:none;color:var(--txt);transition:all .2s;position:relative}
 .lnk:hover{border-color:var(--gld);transform:translateY(-1px)}
-.lnk::after{content:'→';position:absolute;right:14px;color:var(--dim);font-size:12px;transition:all .2s}
+.lnk::after{content:'\2192';position:absolute;right:14px;color:var(--dim);font-size:12px;transition:all .2s}
 .lnk:hover::after{color:var(--gld);right:10px}
 .lnk-icon{width:36px;height:36px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
 .lnk h3{font-size:13px;font-weight:500;letter-spacing:.02em}
@@ -110,988 +144,786 @@ textarea{width:100%;background:var(--bg3);border:1px solid var(--bdr);color:var(
 .sim-card h3{font-size:11px;font-weight:500;line-height:1.3}
 .sim-card p{font-size:8px;color:var(--dim);margin-top:2px}
 
-/* Lab import */
-.lab-badge{display:inline-block;font-size:8px;padding:1px 5px;border-radius:3px;border:1px solid var(--blu);color:var(--blu);font-family:'JetBrains Mono',monospace;vertical-align:middle}
-.import-summary{background:var(--bg2);border:1px solid var(--grn);border-radius:8px;padding:14px;margin-top:10px;text-align:center}
-.import-summary h3{font-size:13px;color:var(--grn);margin-bottom:6px;font-weight:500}
-.import-summary .is-line{font-size:11px;color:var(--sub);margin-bottom:3px}
-.import-summary .is-val{color:var(--gld);font-family:'JetBrains Mono',monospace}
-.import-dup{background:var(--bg2);border:1px solid var(--ora);border-radius:8px;padding:14px;margin-top:10px}
-.import-dup h3{font-size:12px;color:var(--ora);margin-bottom:8px;text-align:center}
-.import-dup p{font-size:10px;color:var(--sub);text-align:center;margin-bottom:8px}
-.import-dup .dup-btns{display:flex;gap:6px}
+/* ─── Export modal ─── */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-box{background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:20px;max-width:400px;width:100%;max-height:90vh;overflow-y:auto}
+.modal-box h2{font-size:14px;color:var(--gld);text-align:center;letter-spacing:.1em;margin-bottom:16px;font-weight:400}
+.modal-section{font-size:9px;color:var(--dim);letter-spacing:.15em;text-transform:uppercase;margin:14px 0 6px}
+.export-opt{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;border:1px solid var(--bdr);margin-bottom:4px;cursor:pointer;transition:border-color .15s;font-size:12px;color:var(--txt)}
+.export-opt:hover{border-color:var(--gld)}
+.export-opt.disabled{opacity:.35;cursor:default;pointer-events:none}
+.export-opt input[type=checkbox]{accent-color:var(--gld);width:16px;height:16px;cursor:pointer}
+.export-opt .eo-count{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);margin-left:auto}
+.modal-actions{display:flex;gap:8px;margin-top:16px}
+.modal-actions .btn{flex:1;margin:0}
+.modal-small-actions{display:flex;gap:8px;margin-top:8px;justify-content:center}
+.modal-small-actions button{background:none;border:none;color:var(--dim);font-family:inherit;font-size:10px;cursor:pointer;padding:4px 8px;letter-spacing:.04em}
+.modal-small-actions button:hover{color:var(--gld)}
 </style>
 </head>
 <body>
-<div class="hdr">
-  <h1>AETHERIA</h1>
-  <div class="sub">Session Tagger</div>
-</div>
-<div class="tabs" id="tab-bar">
-  <div class="tab on" data-tab="tag">Tag</div>
-  <div class="tab" data-tab="log">Log</div>
-  <div class="tab" data-tab="data">Data</div>
-  <div class="tab" data-tab="link">Links</div>
-</div>
-<div class="content" id="content"></div>
+<div id="app"></div>
 
+<script src="src/storage/tagger-store.js"></script>
+<script src="src/import/coherence-lab-import.js"></script>
+<script src="src/import/sophia-import.js"></script>
+<script src="src/export/tagger-export.js"></script>
 <script>
 // ═══════════════════════════════════════
-// AETHERIA SESSION TAGGER
-// Lightweight session logging — no rigid schedule
+// AETHERIA SESSION TAGGER — UI
 // ═══════════════════════════════════════
 
-const CONDITIONS = [
-  {id:'playlist',label:'Alignment Playlist',icon:'🎵',color:'#5048C4',sub:'Gnosis or custom playlist'},
-  {id:'silent',label:'Silent',icon:'🤫',color:'#8a7b6b',sub:'Muse only, no music'},
-  {id:'breathwork',label:'3-6-9 Breathwork',icon:'🌬',color:'#4A7C59',sub:'27 breaths, no music'},
-  {id:'partner',label:'With Partner',icon:'💜',color:'#A840B8',sub:'Present with a loved one'},
-  {id:'playlist_partner',label:'Playlist + Partner',icon:'🎵💜',color:'#C43A6A',sub:'Alignment playlist with a loved one'},
-  {id:'personal',label:'Personal Music',icon:'🎸',color:'#C47A14',sub:'Your own resonance playlist'},
+const MOON_OPTIONS=[
+  {v:'unknown',l:'Unknown'},{v:'\u{1F311} New',l:'\u{1F311} New'},{v:'\u{1F312} Waxing Crescent',l:'\u{1F312} Waxing Crescent'},
+  {v:'\u{1F313} First Quarter',l:'\u{1F313} First Quarter'},{v:'\u{1F314} Waxing Gibbous',l:'\u{1F314} Waxing Gibbous'},
+  {v:'\u{1F315} Full',l:'\u{1F315} Full'},{v:'\u{1F316} Waning Gibbous',l:'\u{1F316} Waning Gibbous'},
+  {v:'\u{1F317} Last Quarter',l:'\u{1F317} Last Quarter'},{v:'\u{1F318} Waning Crescent',l:'\u{1F318} Waning Crescent'}
 ];
-const COND_MAP={};CONDITIONS.forEach(c=>COND_MAP[c.id]=c);
-const ACTIVITIES=['Just woke up','Working','Relaxing','Socializing','Exercising','Driving','Stressed','Before bed','Other'];
 
-let state = {
-  tab:'tag',
-  sessions:[], // [{date,condition,sleep,moodBefore,moodAfter,pain,activity,notes,timestamp}]
-  rctSessions:[], // imported EEG data
-  // Current form state
-  form:{condition:null,sleep:5,moodBefore:5,moodAfter:5,pain:1,activity:null,notes:''},
+let state={
+  view:'home',
+  currentSessionId:null,
+  expandedSnapshots:{},
   lastImportSummary:null,
-  importDuplicate:null
+  importDuplicate:null,
+  sophiaImport:null,
+  showExportModal:false,
+  exportSelection:{lab:false,sophia:false,sophiaSnaps:false,manual:false,unified:false,json:false},
+  // Legacy data (CSV imports, old tagged sessions)
+  sessions:[],
+  rctSessions:[]
 };
 
+// Legacy save/load for old tagged sessions + EEG
 function save(){try{localStorage.setItem('aetheria-tagger',JSON.stringify({sessions:state.sessions,rctSessions:state.rctSessions}));}catch(e){}}
-function load(){
-  try{
-    const s=localStorage.getItem('aetheria-tagger');
-    if(s){const p=JSON.parse(s);state.sessions=p.sessions||[];state.rctSessions=p.rctSessions||[];return true;}
-  }catch(e){}
-  return false;
-}
+function load(){try{const s=localStorage.getItem('aetheria-tagger');if(s){const p=JSON.parse(s);state.sessions=p.sessions||[];state.rctSessions=p.rctSessions||[];}}catch(e){}}
 
-function getToday(){
-  const d=new Date();
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
-
-// Lunar phase
+// ─── Utilities ───
+function getToday(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function moonPhase(date){
   const y=date.getFullYear(),m=date.getMonth()+1,d=date.getDate();
-  let c2,e,jd,b;let yr=y;let mo=m;
-  if(mo<3){yr--;mo+=12;}
-  c2=Math.floor(yr/100);b=2-c2+Math.floor(c2/4);
-  jd=Math.floor(365.25*(yr+4716))+Math.floor(30.6001*(mo+1))+d+b-1524.5;
-  const phase=((jd-2451550.1)/29.530588853)%1;
-  const p=phase<0?phase+1:phase;
-  if(p<0.0625)return'🌑 New';if(p<0.1875)return'🌒 Waxing Crescent';
-  if(p<0.3125)return'🌓 First Quarter';if(p<0.4375)return'🌔 Waxing Gibbous';
-  if(p<0.5625)return'🌕 Full';if(p<0.6875)return'🌖 Waning Gibbous';
-  if(p<0.8125)return'🌗 Last Quarter';if(p<0.9375)return'🌘 Waning Crescent';
-  return'🌑 New';
+  let yr=y,mo=m;if(mo<3){yr--;mo+=12;}
+  const c2=Math.floor(yr/100),b=2-c2+Math.floor(c2/4);
+  const jd=Math.floor(365.25*(yr+4716))+Math.floor(30.6001*(mo+1))+d+b-1524.5;
+  const p=((jd-2451550.1)/29.530588853)%1;const pp=p<0?p+1:p;
+  if(pp<.0625)return'\u{1F311} New';if(pp<.1875)return'\u{1F312} Waxing Crescent';
+  if(pp<.3125)return'\u{1F313} First Quarter';if(pp<.4375)return'\u{1F314} Waxing Gibbous';
+  if(pp<.5625)return'\u{1F315} Full';if(pp<.6875)return'\u{1F316} Waning Gibbous';
+  if(pp<.8125)return'\u{1F317} Last Quarter';if(pp<.9375)return'\u{1F318} Waning Crescent';
+  return'\u{1F311} New';
 }
+function fmtDate(iso){if(!iso)return'—';const d=new Date(iso+'T00:00:00');return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
+function fmtTime(iso){if(!iso)return'';const d=new Date(iso);return d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});}
+function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-// Match EEG sessions to a date
-function utcToLocalDate(isoStr){
-  if(!isoStr)return null;
-  const d=new Date(isoStr);
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
-function eegForDate(dateStr){
-  return state.rctSessions.filter(s=>s.date&&utcToLocalDate(s.date)===dateStr);
-}
+// CSV parser (preserved for legacy RCT/Sophia CSV imports)
+function parseRctCSV(text){const lines=text.trim().split('\n');if(lines.length<2)return[];const headers=lines[0].split(',');const sessions=[];for(let i=1;i<lines.length;i++){const row=[];let field='',inQ=false;for(let c=0;c<lines[i].length;c++){const ch=lines[i][c];if(ch==='"')inQ=!inQ;else if(ch===','&&!inQ){row.push(field);field='';}else field+=ch;}row.push(field);const obj={};headers.forEach((h,hi)=>{let v=row[hi]||'';if(v==='NaN'||v==='')v=null;else if(!isNaN(v)&&v!==''&&!['date','rx_frequencies','timestamp','i_ching_name'].includes(h.trim()))v=+v;obj[h.trim()]=v;});sessions.push(obj);}return sessions;}
+function aggregateSophiaCSV(rows){if(!rows.length)return null;const first=rows[0],last=rows[rows.length-1];const t0=new Date(first.timestamp),t1=new Date(last.timestamp);const dur=Math.round((t1-t0)/1000);const avg=a=>a.length?Math.round(a.reduce((s,v)=>s+v,0)/a.length):null;const bAvg=k=>{const v=rows.map(r=>r[k]).filter(x=>x!=null);return avg(v);};const coh=rows.map(r=>r.coherence_pct).filter(v=>v!=null);const foc=rows.map(r=>r.focus_pct).filter(v=>v!=null);const med=rows.map(r=>r.meditation_pct).filter(v=>v!=null);return{date:first.timestamp,duration_sec:dur,device_type:'sophia-session',avg_coherence:avg(coh),peak_coherence:coh.length?Math.max(...coh):null,baseline_pos:first.position,baseline_freq:first.frequency_hz,baseline_geo:first.geometry,endstate_pos:last.position,endstate_freq:last.frequency_hz,endstate_geo:last.geometry,positions_moved:(last.position!=null&&first.position!=null)?last.position-first.position:null,avg_focus:avg(foc),avg_meditation:avg(med),avg_delta:bAvg('delta_pct'),avg_theta:bAvg('theta_pct'),avg_alpha:bAvg('alpha_pct'),avg_beta:bAvg('beta_pct'),avg_gamma:bAvg('gamma_pct'),top_state:modeOf(rows.map(r=>r.state).filter(Boolean)),top_geometry:modeOf(rows.map(r=>r.geometry).filter(Boolean)),readings:rows.length};}
+function modeOf(arr){if(!arr.length)return null;const c={};arr.forEach(v=>{c[v]=(c[v]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1])[0][0];}
 
-// CSV parser
-function parseRctCSV(text){
-  const lines=text.trim().split('\n');
-  if(lines.length<2)return[];
-  const headers=lines[0].split(',');
-  const sessions=[];
-  for(let i=1;i<lines.length;i++){
-    const row=[];let field='',inQ=false;
-    for(let c=0;c<lines[i].length;c++){
-      const ch=lines[i][c];
-      if(ch==='"')inQ=!inQ;
-      else if(ch===','&&!inQ){row.push(field);field='';}
-      else field+=ch;
-    }
-    row.push(field);
-    const obj={};
-    headers.forEach((h,hi)=>{
-      let v=row[hi]||'';
-      if(v==='NaN'||v==='')v=null;
-      else if(!isNaN(v)&&v!==''&&!['date','rx_frequencies','timestamp','i_ching_name'].includes(h.trim()))v=+v;
-      obj[h.trim()]=v;
-    });
-    sessions.push(obj);
-  }
-  return sessions;
-}
+// ─── Helpers ───
+function getLabSessionCount(){return TaggerStore.getIndex().sessions.filter(s=>s.source==='coherence_lab').length;}
+function getSophiaSessionCount(){return TaggerStore.getIndex().sessions.filter(s=>s.source==='sophia').length;}
 
-// ─── Render ───
+// ═══════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════
+
 function render(){
-  const el=document.getElementById('content');
-  let h='';
-  const f=state.form;
-  const today=getToday();
-  const moon=moonPhase(new Date());
-
-  if(state.tab==='tag'){
-    // Date + moon
-    h+=`<div style="text-align:center;margin-bottom:10px">
-      <div style="font-size:13px;color:var(--txt)">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}</div>
-      <div style="font-size:11px;color:var(--dim)">${moon}</div>
-    </div>`;
-
-    // Condition select
-    h+=`<div class="card"><h2>What did you do?</h2>
-      <div class="cond-grid">
-        ${CONDITIONS.map(c=>`<div class="cond-btn ${f.condition===c.id?'selected':''}" 
-          style="${f.condition===c.id?'border-color:'+c.color+';color:'+c.color+';background:'+c.color+'11':''}" 
-          onclick="pickCond('${c.id}')">
-          <span class="cb-icon">${c.icon}</span>
-          <span class="cb-label">${c.label}</span>
-          <span class="cb-sub">${c.sub}</span>
-        </div>`).join('')}
-      </div>
-    </div>`;
-
-    // Quick metrics
-    h+=`<div class="card"><h2>How are you feeling?</h2>
-      <div class="slider-group">
-        <div class="slider-label"><span>Sleep last night</span><span class="mono" style="color:var(--blu)">${f.sleep}/10</span></div>
-        <input type="range" min="1" max="10" value="${f.sleep}" oninput="state.form.sleep=+this.value;render()" style="width:100%;accent-color:#5048C4">
-      </div>
-      <div class="slider-group">
-        <div class="slider-label"><span>Mood before</span><span class="mono" style="color:var(--ora)">${f.moodBefore}/10</span></div>
-        <input type="range" min="1" max="10" value="${f.moodBefore}" oninput="state.form.moodBefore=+this.value;render()" style="width:100%;accent-color:#C47A14">
-      </div>
-      <div class="slider-group">
-        <div class="slider-label"><span>Mood after</span><span class="mono" style="color:var(--gld)">${f.moodAfter}/10</span></div>
-        <input type="range" min="1" max="10" value="${f.moodAfter}" oninput="state.form.moodAfter=+this.value;render()" style="width:100%;accent-color:#d4a574">
-      </div>
-      <div class="slider-group">
-        <div class="slider-label"><span>Pain / symptoms</span><span class="mono" style="color:var(--red)">${f.pain}/10</span></div>
-        <input type="range" min="1" max="10" value="${f.pain}" oninput="state.form.pain=+this.value;render()" style="width:100%;accent-color:#C45C5C">
-      </div>
-    </div>`;
-
-    // Activity
-    h+=`<div class="card"><h2>What were you doing before?</h2>
-      <div class="chip-row">
-        ${ACTIVITIES.map(a=>`<div class="chip ${f.activity===a?'on':''}" onclick="pickActivity('${a}')">${a}</div>`).join('')}
-      </div>
-    </div>`;
-
-    // Notes
-    h+=`<div class="card"><h2>Notes</h2>
-      <textarea id="f-notes" placeholder="Anything notable — observations, what music, how it felt...">${f.notes}</textarea>
-    </div>`;
-
-    // Save
-    h+=`<button class="btn btn-grn" onclick="saveSession()">Save Session Tag</button>`;
-    h+=`<div class="saved" id="save-msg">Saved!</div>`;
-
-    // Today's EEG sessions
-    const todayEeg=eegForDate(today);
-    if(todayEeg.length){
-      h+=`<div class="card" style="margin-top:12px"><h2>Today's EEG Data (${todayEeg.length} session${todayEeg.length>1?'s':''})</h2>`;
-      todayEeg.forEach(s=>{
-        h+=renderEegDetail(s);
-      });
-      h+=`</div>`;
-    }
-  }
-
-  // ─── LOG TAB ───
-  if(state.tab==='log'){
-    // Group sessions by date
-    const byDate={};
-    state.sessions.forEach(s=>{
-      const d=s.date||'unknown';
-      if(!byDate[d])byDate[d]=[];
-      byDate[d].push(s);
-    });
-    // Sort dates newest first
-    const dates=Object.keys(byDate).sort().reverse();
-
-    // Load imported Coherence Lab sessions grouped by date
-    const labSessions=getImportedSessions();
-    const labByDate={};
-    labSessions.forEach(s=>{
-      const d=labSessionDate(s.session_data.metadata);
-      if(!labByDate[d])labByDate[d]=[];
-      labByDate[d].push(s);
-    });
-
-    if(!dates.length&&!state.rctSessions.length&&!labSessions.length){
-      h+=`<div style="text-align:center;padding:30px 0;color:var(--sub)">No sessions yet. Go to Tag to log your first session, or import one from the Data tab.</div>`;
-    }
-
-    // Also show dates with EEG data but no tags
-    const allDates=new Set([...dates]);
-    state.rctSessions.forEach(s=>{if(s.date)allDates.add(utcToLocalDate(s.date));});
-    Object.keys(labByDate).forEach(d=>allDates.add(d));
-    const sortedDates=[...allDates].sort().reverse();
-
-    h+=`<div style="font-size:10px;color:var(--dim);text-align:center;margin-bottom:10px">${state.sessions.length} tagged · ${state.rctSessions.length} EEG · ${labSessions.length} Lab</div>`;
-
-    sortedDates.forEach(date=>{
-      const tags=byDate[date]||[];
-      const eeg=eegForDate(date);
-      const dateObj=new Date(date+'T00:00:00');
-      const dateStr=dateObj.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-      const moon=moonPhase(dateObj);
-
-      h+=`<div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <div style="font-size:12px;color:var(--txt)">${dateStr}</div>
-          <div style="font-size:10px;color:var(--dim)">${moon}</div>
-        </div>`;
-
-      // Tagged sessions
-      tags.forEach(t=>{
-        const c=COND_MAP[t.condition];
-        const moodDelta=t.moodAfter-t.moodBefore;
-        h+=`<div class="log-entry" style="border-color:${c?c.color:'var(--bdr)'}">
-          <div class="log-cond" style="color:${c?c.color:'var(--txt)'}">${c?c.icon+' ':''} ${c?c.label:t.condition}</div>
-          <div class="log-metrics">
-            <span>Sleep: <span class="log-metric" style="color:var(--blu)">${t.sleep}</span></span>
-            <span>Mood: <span class="log-metric" style="color:var(--ora)">${t.moodBefore}</span>→<span class="log-metric" style="color:var(--gld)">${t.moodAfter}</span> <span style="color:${moodDelta>=0?'var(--grn)':'var(--red)'}">${moodDelta>=0?'+':''}${moodDelta}</span></span>
-            <span>Pain: <span class="log-metric" style="color:var(--red)">${t.pain}</span></span>
-            ${t.activity?`<span>${t.activity}</span>`:''}
-          </div>
-          ${t.notes?`<div class="log-notes">"${t.notes}"</div>`:''}
-        </div>`;
-      });
-
-      // EEG sessions for this date
-      if(eeg.length){
-        eeg.forEach(s=>{
-          h+=`<div style="padding-left:10px;border-left:3px solid var(--pur);margin-bottom:4px">`;
-          h+=renderEegDetail(s);
-          h+=`</div>`;
-        });
-      }
-
-      // Coherence Lab sessions for this date
-      const labForDate=labByDate[date]||[];
-      labForDate.forEach(s=>{h+=renderLabSessionLog(s);});
-
-      if(!tags.length&&(eeg.length||labForDate.length)){
-        h+=`<div style="font-size:9px;color:var(--dim);margin-top:4px">${labForDate.length?'Coherence Lab':'EEG'} data only — no subjective tag for this day</div>`;
-      }
-
-      h+=`</div>`;
-    });
-  }
-
-  // ─── DATA TAB ───
-  if(state.tab==='data'){
-    // Import
-    h+=`<div class="card">
-      <h2>Import Session Data</h2>
-      <div class="import-zone" onclick="document.getElementById('csv-input').click()">
-        <input type="file" id="csv-input" accept=".csv,.json" multiple onchange="importCSVMulti(this)">
-        <div style="font-size:12px;color:var(--gld);margin-bottom:4px">Tap to import</div>
-        <div style="font-size:10px;color:var(--dim)">Coherence Lab JSON · RCT CSV · Sophia · Athena</div>
-      </div>
-      ${state.rctSessions.length?`<div style="font-size:10px;color:var(--grn);text-align:center;margin-top:6px">${state.rctSessions.length} EEG sessions loaded</div>`:''}
-      ${getLabSessionCount()?`<div style="font-size:10px;color:var(--blu);text-align:center;margin-top:4px">${getLabSessionCount()} Coherence Lab session${getLabSessionCount()!==1?'s':''} imported</div>`:''}
-    </div>`;
-    if(state.lastImportSummary){
-      h+=renderImportSummary(state.lastImportSummary.summary,state.lastImportSummary.metadata);
-    }
-    if(state.importDuplicate){
-      const dup=state.importDuplicate;
-      const dupDate=new Date(dup.importedAt).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
-      h+=`<div class="import-dup">
-        <h3>Session already imported</h3>
-        <p>This session was imported on ${dupDate}. What would you like to do?</p>
-        <div class="dup-btns">
-          <button class="btn btn-sm" style="flex:1" onclick="dupView()">View existing</button>
-          <button class="btn btn-sm btn-grn" style="flex:1" onclick="dupReimport()">Re-import (keep tags)</button>
-          <button class="btn btn-sm btn-red" style="flex:1" onclick="dupCancel()">Cancel</button>
-        </div>
-      </div>`;
-    }
-
-    // Stats
-    const labCount=getLabSessionCount();
-    if(state.sessions.length||state.rctSessions.length||labCount){
-      const tags=state.sessions;
-      const n=tags.length;
-      const condCounts={};tags.forEach(t=>{condCounts[t.condition]=(condCounts[t.condition]||0)+1;});
-
-      h+=`<div class="card"><h2>Overview</h2>
-        <div class="stat-row">
-          <div class="stat"><div class="stat-val" style="color:var(--gld)">${n}</div><div class="stat-label">Sessions Tagged</div></div>
-          <div class="stat"><div class="stat-val" style="color:var(--pur)">${state.rctSessions.length}</div><div class="stat-label">EEG Sessions</div></div>
-          <div class="stat"><div class="stat-val" style="color:var(--blu)">${labCount}</div><div class="stat-label">Lab Sessions</div></div>
-          <div class="stat"><div class="stat-val" style="color:var(--grn)">${new Set(tags.map(t=>t.date)).size}</div><div class="stat-label">Days Active</div></div>
-        </div>
-      </div>`;
-
-      // Condition breakdown
-      if(n){
-        h+=`<div class="card"><h2>Condition Breakdown</h2>`;
-        CONDITIONS.forEach(c=>{
-          const count=condCounts[c.id]||0;
-          if(!count)return;
-          const pct=count/n*100;
-          const entries=tags.filter(t=>t.condition===c.id);
-          const avgMoodDelta=entries.reduce((s,t)=>s+(t.moodAfter-t.moodBefore),0)/entries.length;
-          h+=`<div style="display:flex;align-items:center;gap:8px;margin:6px 0">
-            <span style="font-size:14px">${c.icon}</span>
-            <span style="font-size:11px;color:${c.color};width:90px">${c.label}</span>
-            <div style="flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">
-              <div style="height:100%;width:${pct}%;background:${c.color};border-radius:4px"></div>
-            </div>
-            <span class="mono" style="font-size:10px;color:var(--sub)">${count}</span>
-            <span class="mono" style="font-size:10px;color:${avgMoodDelta>=0?'var(--grn)':'var(--red)'}">${avgMoodDelta>=0?'+':''}${avgMoodDelta.toFixed(1)}</span>
-          </div>`;
-        });
-        h+=`</div>`;
-      }
-    }
-
-    // Export
-    h+=`<div class="card"><h2>Export</h2>
-      <div style="display:flex;gap:6px">
-        <button class="btn" style="flex:1" onclick="exportData('csv')">Export CSV</button>
-        <button class="btn" style="flex:1" onclick="exportData('json')">Export JSON</button>
-      </div>
-    </div>`;
-
-    // Clear
-    h+=`<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-      <button class="btn btn-red btn-sm" style="flex:1" onclick="if(confirm('Clear all imported EEG data?')){state.rctSessions=[];save();render();}">Clear EEG Data</button>
-      <button class="btn btn-red btn-sm" style="flex:1" onclick="clearLabSessions()">Clear Lab Sessions</button>
-      <button class="btn btn-red btn-sm" style="flex:1" onclick="if(confirm('Clear all tagged sessions?')){state.sessions=[];save();render();}">Clear Tags</button>
-    </div>`;
-  }
-
-  // ─── LINK TAB ───
-  if(state.tab==='link'){
-    h+=`<div class="section-label">Apps & Tools</div>
-
-    <a class="lnk" href="https://aetheria432.com" target="_blank">
-      <div class="lnk-icon li-gld">🎵</div>
-      <div><h3>Aetheria 432Hz Player</h3><p>27-frequency harmonic healing system</p></div>
-    </a>
-    <a class="lnk" href="https://aetheriarct.com" target="_blank">
-      <div class="lnk-icon li-pur">🧠</div>
-      <div><h3>Aetheria RCT</h3><p>Muse 2 EEG neuro-adaptive coherence training</p></div>
-    </a>
-    <a class="lnk" href="https://aetheria-coherence-lab.org" target="_blank">
-      <div class="lnk-icon li-blu">⬡</div>
-      <div><h3>Aetheria Coherence Lab</h3><p>Adaptive biofield coherence instrument — H10 + Muse + Woojer</p></div>
-    </a>
-
-    <div class="section-label">Sophia</div>
-
-    <a class="lnk" href="https://aetheriasos.com" target="_blank">
-      <div class="lnk-icon li-mag">🔮</div>
-      <div><h3>Sophia</h3><p>Your personal AI companion — runs locally, no cloud</p></div>
-    </a>
-
-    <div class="section-label">Books</div>
-
-    <a class="lnk" href="https://a.co/d/079tM297" target="_blank">
-      <div class="lnk-icon li-mag">📕</div>
-      <div><h3>Aetheria</h3><p>The frequency healing system — foundational text</p></div>
-    </a>
-    <a class="lnk" href="https://a.co/d/0c83ZGEu" target="_blank">
-      <div class="lnk-icon li-blu">📘</div>
-      <div><h3>The Golden Thread</h3><p>One equation across all scales — E=hf as universal key</p></div>
-    </a>
-    <a class="lnk" href="https://a.co/d/0ckEN0Qs" target="_blank">
-      <div class="lnk-icon li-ora">📙</div>
-      <div><h3>Cosmic Rhythms</h3><p>How sun, moon & earth shape your biology</p></div>
-    </a>
-    <a class="lnk" href="https://a.co/d/04Y1pUtE" target="_blank">
-      <div class="lnk-icon li-cor">📗</div>
-      <div><h3>SFB — A TBI Guide</h3><p>Navigating traumatic brain injury recovery</p></div>
-    </a>
-
-    <div class="section-label">Music</div>
-
-    <a class="lnk" href="https://open.spotify.com/artist/4CXB2ctrUCvInDQkKDhw4q" target="_blank">
-      <div class="lnk-icon li-grn">🎧</div>
-      <div><h3>Aetheria on Spotify</h3><p>Frequency-tuned healing music — 432Hz</p></div>
-    </a>
-
-    <div class="section-label">Interactive Simulations</div>
-
-    <div class="sim-grid">
-      <a class="sim-card" href="https://lilrobodue.github.io/Lewis-Vortex-Model/" target="_blank">
-        <div class="si">🌀</div><h3>Lewis Vortex Model</h3><p>Formation Theory</p>
-      </a>
-      <a class="sim-card" href="https://lilrobodue.github.io/Unified-Scale-Navigator/" target="_blank">
-        <div class="si">🔬</div><h3>Unified Scale Navigator</h3><p>Quantum to cosmic</p>
-      </a>
-      <a class="sim-card" href="https://lilrobodue.github.io/HRV-Coherence-Visualizer/" target="_blank">
-        <div class="si">💓</div><h3>HRV Coherence Visualizer</h3><p>Heart rate variability</p>
-      </a>
-      <a class="sim-card" href="https://lilrobodue.github.io/Schumann-Biology-Simulator/" target="_blank">
-        <div class="si">🌍</div><h3>Schumann Biology Simulator</h3><p>Earth's resonance</p>
-      </a>
-      <a class="sim-card" href="https://lilrobodue.github.io/Cellular-Voltage-Frequency-Model/" target="_blank">
-        <div class="si">⚡</div><h3>Cellular Voltage Model</h3><p>Frequency & cell health</p>
-      </a>
-      <a class="sim-card" href="https://lilrobodue.github.io/Galactic-Scale-Vortex-Formation/" target="_blank">
-        <div class="si">🌌</div><h3>Galactic Vortex Formation</h3><p>Cosmic scale structure</p>
-      </a>
-    </div>
-
-    <div class="section-label">Community & Social</div>
-
-    <a class="lnk" href="https://discord.gg/ddR3MfgCsM" target="_blank">
-      <div class="lnk-icon li-blu">💬</div>
-      <div><h3>Th3 L0unG3 — Discord</h3><p>365+ healing frequency songs · community · resources</p></div>
-    </a>
-    <a class="lnk" href="https://www.youtube.com/@Aetheria432" target="_blank">
-      <div class="lnk-icon li-cor">▶</div>
-      <div><h3>YouTube</h3><p>Aetheria content, demos, and explorations</p></div>
-    </a>
-    <a class="lnk" href="https://x.com/TheyCallmeJobo" target="_blank">
-      <div class="lnk-icon li-ora">𝕏</div>
-      <div><h3>X / Twitter</h3><p>@TheyCallmeJobo — thoughts, updates, frequencies</p></div>
-    </a>
-
-    <div class="section-label">Contact</div>
-
-    <a class="lnk" href="mailto:Aetheria432@pm.me">
-      <div class="lnk-icon li-gld">✉</div>
-      <div><h3>Aetheria432@pm.me</h3><p>Questions, collaborations, research inquiries</p></div>
-    </a>`;
-  }
-
-  el.innerHTML=h;
+  const el=document.getElementById('app');
+  if(state.view==='detail'&&state.currentSessionId) el.innerHTML=renderDetail(state.currentSessionId);
+  else if(state.view==='new-manual') el.innerHTML=renderManualForm();
+  else if(state.view==='links') el.innerHTML=renderLinks();
+  else el.innerHTML=renderHome();
 }
 
-// ─── Actions ───
-window.pickCond=function(id){state.form.condition=id;render();};
-window.pickActivity=function(a){state.form.activity=state.form.activity===a?null:a;render();};
+// ─── HOME ───
+function renderHome(){
+  let h='<div class="hdr"><h1>AETHERIA SESSION TAGGER</h1><div class="subtitle">Your reflections, held.</div>';
+  h+='<div class="hdr-nav"><a onclick="nav(\'links\')">Links</a></div></div>';
+  h+='<div class="content">';
 
-window.saveSession=function(){
-  const f=state.form;
-  const notesEl=document.getElementById('f-notes');
-  if(notesEl)f.notes=notesEl.value;
-  if(!f.condition){alert('Pick a condition first!');return;}
-  state.sessions.push({
-    date:getToday(),
-    condition:f.condition,
-    sleep:f.sleep,
-    moodBefore:f.moodBefore,
-    moodAfter:f.moodAfter,
-    pain:f.pain,
-    activity:f.activity,
-    notes:f.notes,
-    moon:moonPhase(new Date()),
-    timestamp:new Date().toISOString()
-  });
-  // Reset form for next session
-  state.form={condition:null,sleep:f.sleep,moodBefore:5,moodAfter:5,pain:f.pain,activity:null,notes:''};
-  save();
-  render();
-  setTimeout(()=>{const m=document.getElementById('save-msg');if(m){m.classList.add('show');setTimeout(()=>m.classList.remove('show'),2000);}},50);
-};
+  // Action buttons
+  h+='<div class="home-actions">';
+  h+='<button class="btn btn-grn" style="margin:0" onclick="document.getElementById(\'home-import\').click()">+ Import Session</button>';
+  h+='<button class="btn" style="margin:0" onclick="nav(\'new-manual\')">+ New Manual Session</button>';
+  h+='<button class="btn" style="margin:0;border-color:var(--dim);color:var(--dim)" onclick="openExportModal()">Export</button>';
+  h+='</div>';
+  h+='<input type="file" id="home-import" accept=".csv,.json" multiple style="display:none" onchange="handleFileImport(this)">';
 
-// Aggregate a Sophia timeline CSV into a single session summary
-function aggregateSophiaCSV(rows){
-  if(!rows.length)return null;
-  const first=rows[0], last=rows[rows.length-1];
-  const t0=new Date(first.timestamp), t1=new Date(last.timestamp);
-  const durSec=Math.round((t1-t0)/1000);
-  const cohVals=rows.map(r=>r.coherence_pct).filter(v=>v!=null);
-  const focVals=rows.map(r=>r.focus_pct).filter(v=>v!=null);
-  const medVals=rows.map(r=>r.meditation_pct).filter(v=>v!=null);
-  const avg=arr=>arr.length?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length):null;
-  const bandAvg=key=>{const v=rows.map(r=>r[key]).filter(x=>x!=null);return avg(v);};
-  return {
-    date: first.timestamp,
-    duration_sec: durSec,
-    device_type: 'sophia-session',
-    avg_coherence: avg(cohVals),
-    peak_coherence: cohVals.length?Math.max(...cohVals):null,
-    baseline_pos: first.position,
-    baseline_freq: first.frequency_hz,
-    baseline_geo: first.geometry,
-    baseline_dominant: null,
-    endstate_pos: last.position,
-    endstate_freq: last.frequency_hz,
-    endstate_geo: last.geometry,
-    endstate_dominant: null,
-    positions_moved: (last.position!=null&&first.position!=null)?last.position-first.position:null,
-    avg_focus: avg(focVals),
-    avg_meditation: avg(medVals),
-    avg_delta: bandAvg('delta_pct'),
-    avg_theta: bandAvg('theta_pct'),
-    avg_alpha: bandAvg('alpha_pct'),
-    avg_beta: bandAvg('beta_pct'),
-    avg_gamma: bandAvg('gamma_pct'),
-    top_state: modeOf(rows.map(r=>r.state).filter(Boolean)),
-    top_geometry: modeOf(rows.map(r=>r.geometry).filter(Boolean)),
-    readings: rows.length
-  };
-}
-
-// Get most common value in an array
-function modeOf(arr){
-  if(!arr.length)return null;
-  const counts={};arr.forEach(v=>{counts[v]=(counts[v]||0)+1;});
-  return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0][0];
-}
-
-// Render a single EEG session detail block (shared between Tag + Log tabs)
-function renderEegDetail(s){
-  const dur=s.duration_sec?Math.floor(s.duration_sec/60)+'m '+s.duration_sec%60+'s':'—';
-  const isAthena=s.device_type&&s.device_type.includes('athena');
-  const isSophia=s.device_type==='sophia-session';
-  const device=isAthena?'Athena':isSophia?'Sophia':'Muse';
-  const deviceColor=isAthena?'var(--mag)':isSophia?'var(--gld)':'var(--pur)';
-
-  let h=`<div style="font-size:10px;color:var(--sub);margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--bdr)">`;
-
-  // Header: device badge + coherence + duration
-  h+=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
-    <span class="mono" style="font-size:8px;padding:1px 5px;border-radius:3px;border:1px solid ${deviceColor};color:${deviceColor}">${device}</span>
-    <span class="mono" style="color:var(--pur)">${s.peak_coherence||'—'}% peak</span> ·
-    <span class="mono">${s.avg_coherence||'—'}% avg</span> · ${dur}
-  </div>`;
-
-  // Position journey
-  h+=`<div style="margin-bottom:2px">
-    ${s.baseline_geo||'Pos '+(s.baseline_pos||'?')} → ${s.endstate_geo||'Pos '+(s.endstate_pos||'?')}
-    ${s.positions_moved>0?' <span style="color:var(--grn)">+'+s.positions_moved+'</span>':s.positions_moved<0?' <span style="color:var(--red)">'+s.positions_moved+'</span>':''}
-  </div>`;
-
-  // Dominant brainwave shift (Athena RCT)
-  if(s.baseline_dominant||s.endstate_dominant){
-    h+=`<div style="margin-bottom:2px">
-      <span style="color:var(--dim)">Dominant:</span> ${s.baseline_dominant||'?'} → ${s.endstate_dominant||'?'}
-    </div>`;
+  // Import dialogs
+  if(state.sophiaImport) h+=renderSophiaImportDialog(state.sophiaImport);
+  if(state.lastImportSummary){
+    if(state.lastImportSummary.type==='sophia') h+=renderSophiaImportSummary(state.lastImportSummary);
+    else h+=renderLabImportSummary(state.lastImportSummary);
+  }
+  if(state.importDuplicate){
+    const dup=state.importDuplicate;
+    const dd=new Date(dup.importedAt).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+    h+='<div class="import-dup"><h3>Session already imported</h3>';
+    h+='<p>This session was imported on '+dd+'. What would you like to do?</p>';
+    h+='<div class="dup-btns">';
+    h+='<button class="btn btn-sm" style="flex:1" onclick="dupView()">View existing</button>';
+    h+='<button class="btn btn-sm btn-grn" style="flex:1" onclick="dupReimport()">Re-import (keep tags)</button>';
+    h+='<button class="btn btn-sm btn-red" style="flex:1" onclick="dupCancel()">Cancel</button>';
+    h+='</div></div>';
   }
 
-  // Heart rate (Athena)
-  if(s.heart_rate!=null){
-    h+=`<span style="color:var(--red)">♥ </span><span class="mono">${s.heart_rate} bpm</span>  `;
-  }
-
-  // fNIRS summary (Athena) — show average SQI across channels
-  if(s.fnirs_sqi_LI!=null||s.fnirs_sqi_RI!=null){
-    const sqis=[s.fnirs_sqi_LI,s.fnirs_sqi_RI,s.fnirs_sqi_LO,s.fnirs_sqi_RO].filter(v=>v!=null);
-    const avgSqi=sqis.length?Math.round(sqis.reduce((a,b)=>a+b,0)/sqis.length*100):null;
-    if(avgSqi!=null){
-      const sqiColor=avgSqi>=70?'var(--grn)':avgSqi>=40?'var(--ora)':'var(--red)';
-      h+=`<span style="color:var(--dim)">fNIRS:</span> <span class="mono" style="color:${sqiColor}">${avgSqi}% SQI</span>  `;
-    }
-  }
-
-  // Brainwave bands (Sophia sessions)
-  if(s.avg_delta!=null||s.avg_gamma!=null){
-    h+=`<div style="margin-top:3px;display:flex;gap:6px;flex-wrap:wrap">`;
-    const bands=[
-      {k:'avg_delta',l:'δ',c:'#5048C4'},{k:'avg_theta',l:'θ',c:'#7B50D4'},
-      {k:'avg_alpha',l:'α',c:'#4A7C59'},{k:'avg_beta',l:'β',c:'#C47A14'},
-      {k:'avg_gamma',l:'γ',c:'#A840B8'}
-    ];
-    bands.forEach(b=>{
-      if(s[b.k]!=null) h+=`<span class="mono" style="color:${b.c}">${b.l}${s[b.k]}%</span>`;
-    });
-    h+=`</div>`;
-  }
-
-  // Focus / meditation (Sophia)
-  if(s.avg_focus!=null||s.avg_meditation!=null){
-    h+=`<div style="margin-top:2px">`;
-    if(s.avg_focus!=null) h+=`<span style="color:var(--blu)">Focus ${s.avg_focus}%</span>  `;
-    if(s.avg_meditation!=null) h+=`<span style="color:var(--grn)">Med ${s.avg_meditation}%</span>  `;
-    if(s.top_state) h+=`<span style="color:var(--dim)">${s.top_state}</span>`;
-    h+=`</div>`;
-  }
-
-  h+=`</div>`;
-  return h;
-}
-
-// ─── Coherence Lab Import ───
-function labSessionDate(meta){
-  if(!meta||!meta.startTime)return 'unknown';
-  const d=new Date(meta.startTime);
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
-
-function detectFormat(obj){
-  if(obj.aetheria_export_version&&obj.export_type==='session_summary_for_tagger')return'structured_export';
-  if(obj.streams&&typeof obj.streams==='object'&&obj.metadata&&obj.metadata.sessionId&&typeof obj.metadata.sessionId==='string')return'native_save';
-  return'unknown';
-}
-
-function validateStructuredExport(obj){
-  const errors=[];
-  if(!obj.metadata||typeof obj.metadata!=='object'||!obj.metadata.sessionId||typeof obj.metadata.sessionId!=='string'){
-    errors.push('structured_missing_session_id');
-  }
-  if(!obj.time_series||typeof obj.time_series!=='object'){
-    errors.push('structured_missing_time_series');
-  }
-  if(!obj.summary||typeof obj.summary!=='object'){
-    errors.push('structured_missing_summary');
-  }
-  if(!Array.isArray(obj.state_transitions)){
-    errors.push('structured_missing_state_transitions');
-  }
-  if(!Array.isArray(obj.prescriptions)){
-    errors.push('structured_missing_prescriptions');
-  }
-  return{valid:errors.length===0,errors};
-}
-
-function validateNativeSave(obj){
-  const errors=[];
-  if(!obj.metadata||typeof obj.metadata!=='object'||!obj.metadata.sessionId||typeof obj.metadata.sessionId!=='string'){
-    errors.push('native_missing_session_id');
-  }
-  if(!obj.streams||typeof obj.streams!=='object'){
-    errors.push('native_missing_streams');
-  } else if(!Array.isArray(obj.streams.coherence)){
-    errors.push('native_missing_coherence');
-  }
-  return{valid:errors.length===0,errors};
-}
-
-function convertNativeToCanonical(nativeObj){
-  const meta=nativeObj.metadata;
-  const streams=nativeObj.streams;
-  const startMs=meta.startTime?new Date(meta.startTime).getTime():null;
-  const endMs=meta.endTime?new Date(meta.endTime).getTime():null;
-  const durationSec=(startMs&&endMs)?Math.round((endMs-startMs)/1000):0;
-
-  const session={sessionId:meta.sessionId,startTime:meta.startTime,endTime:meta.endTime,duration_seconds:durationSec,softwareVersion:meta.softwareVersion||'1.0.0'};
-
-  const coh=streams.coherence||[];
-  const bcsArr=streams.bcs||[];
-  const st=streams.state||[];
-  const rx=streams.prescription||[];
-
-  const time_series={
-    coherence_t:coh.map(c=>c.t),coherence_tcs:coh.map(c=>c.tcs),coherence_gut:coh.map(c=>c.gut),
-    coherence_heart:coh.map(c=>c.heart),coherence_head:coh.map(c=>c.head),coherence_plv:coh.map(c=>c.plv),coherence_harm:coh.map(c=>c.harm),
-    bcs_t:bcsArr.map(b=>b.t),bcs_value:bcsArr.map(b=>b.bcs),bcs_kuramoto:bcsArr.map(b=>b.kuramoto),
-    bcs_shared_energy:bcsArr.map(b=>b.sharedEnergy),bcs_mutual_info:bcsArr.map(b=>b.mutualInfo),bcs_phase_transition:bcsArr.map(b=>b.phaseTransition)
-  };
-
-  const tcsVals=coh.map(c=>c.tcs).filter(v=>v!=null);
-  const peakTCS=tcsVals.length?Math.round(Math.max(...tcsVals)*10)/10:null;
-  const meanTCS=tcsVals.length?Math.round(tcsVals.reduce((a,b)=>a+b,0)/tcsVals.length*10)/10:null;
-  const bcsVals=bcsArr.map(b=>b.bcs).filter(v=>v!=null);
-  const peakBCS=bcsVals.length?Math.round(Math.max(...bcsVals)*10)/10:null;
-  const meanBCS=bcsVals.length?Math.round(bcsVals.reduce((a,b)=>a+b,0)/bcsVals.length*10)/10:null;
-  const ptEntry=bcsArr.find(b=>b.phaseTransition===true);
-  const harmVals=coh.map(c=>c.harm).filter(v=>v!=null);
-  const harmOneCount=coh.filter(c=>c.harm===1.0).length;
-  const harmMean=harmVals.length?Math.round(harmVals.reduce((a,b)=>a+b,0)/harmVals.length*1000)/1000:0;
-  const cascadeFlips=st.filter(s=>s.reason&&s.reason.toLowerCase().includes('flipped')).length;
-  const rxPlayed=rx.filter(r=>r.action==='play').length;
-  const closingType=st.some(s=>s.to==='CLOSING')?'graceful':'user_stopped';
-
-  const summary={peak_tcs:peakTCS,mean_tcs:meanTCS,peak_bcs:peakBCS,mean_bcs:meanBCS,
-    phase_transition_detected:!!ptEntry,phase_transition_time_seconds:ptEntry?ptEntry.t:null,
-    harm_one_count:harmOneCount,harm_mean:harmMean,cascade_flips:cascadeFlips,prescriptions_count:rxPlayed,closing_type:closingType};
-
-  return{aetheria_export_version:'1.0',export_type:'session_summary_for_tagger',exported_at:new Date().toISOString(),
-    metadata:meta,session:session,summary:summary,time_series:time_series,state_transitions:st,prescriptions:rx};
-}
-
-function computeSessionSummary(sessionData){
-  const sum=sessionData.summary||{};
-  const ses=sessionData.session;
-  return{
-    durationSec:ses?ses.duration_seconds||0:0,
-    peakTCS:sum.peak_tcs!=null?sum.peak_tcs:null,
-    meanTCS:sum.mean_tcs!=null?sum.mean_tcs:null,
-    peakBCS:sum.peak_bcs!=null?sum.peak_bcs:null,
-    ptDetected:!!sum.phase_transition_detected,
-    ptTime:sum.phase_transition_time_seconds!=null?sum.phase_transition_time_seconds:null,
-    harmonicLocks:sum.harm_one_count||0,
-    cascadeFlips:sum.cascade_flips||0,
-    rxPlayed:sum.prescriptions_count||0,
-    closingType:sum.closing_type||'user_stopped'
-  };
-}
-
-function formatPtTime(t,meta){
-  if(t==null)return'?';
-  if(t>1e10&&meta&&meta.startTime)return Math.round((t-new Date(meta.startTime).getTime())/1000);
-  return Math.round(t);
-}
-
-function getExistingSession(sessionId){
-  try{const r=localStorage.getItem('aetheria_tagger:session:'+sessionId);return r?JSON.parse(r):null;}catch(e){return null;}
-}
-
-function storeImportedSession(filtered,existingRecord){
-  const sessionId=filtered.metadata.sessionId;
-  const now=new Date().toISOString();
-  const record=existingRecord?{
-    session_id:existingRecord.session_id,
-    source:'aetheria_coherence_lab',
-    imported_at:existingRecord.imported_at,
-    last_edited_at:now,
-    session_data:filtered,
-    tags:existingRecord.tags||{}
-  }:{
-    session_id:sessionId,
-    source:'aetheria_coherence_lab',
-    imported_at:now,
-    last_edited_at:now,
-    session_data:filtered,
-    tags:{}
-  };
-  localStorage.setItem('aetheria_tagger:session:'+sessionId,JSON.stringify(record));
-  let index=[];
-  try{index=JSON.parse(localStorage.getItem('aetheria_tagger:index')||'[]');}catch(e){}
-  if(!index.includes(sessionId)){index.unshift(sessionId);localStorage.setItem('aetheria_tagger:index',JSON.stringify(index));}
-  return sessionId;
-}
-
-function getImportedSessions(){
-  let index=[];
-  try{index=JSON.parse(localStorage.getItem('aetheria_tagger:index')||'[]');}catch(e){}
-  return index.map(id=>getExistingSession(id)).filter(Boolean);
-}
-
-function getLabSessionCount(){
-  try{return JSON.parse(localStorage.getItem('aetheria_tagger:index')||'[]').length;}catch(e){return 0;}
-}
-
-function importLabJSON(text){
-  let obj;
-  try{obj=JSON.parse(text);}catch(e){
-    alert("That file couldn't be read as JSON. Make sure you uploaded a .json file from the Coherence Lab.");
-    return;
-  }
-  if(!obj||typeof obj!=='object'){
-    alert("That file couldn't be read as JSON. Make sure you uploaded a .json file from the Coherence Lab.");
-    return;
-  }
-  const fmt=detectFormat(obj);
-  if(fmt==='unknown'){
-    alert("This file doesn't look like an Aetheria session \u2014 it's missing both the tagger export format markers and the native save markers. Make sure you downloaded it from the Coherence Lab.");
-    return;
-  }
-  let canonical;
-  if(fmt==='structured_export'){
-    const v=validateStructuredExport(obj);
-    if(!v.valid){
-      const err=v.errors[0];
-      if(err==='structured_missing_session_id')alert("This file appears to be a tagger export but is missing metadata.sessionId. The file may be corrupted.");
-      else if(err==='structured_missing_time_series')alert("This file appears to be a tagger export but has no time_series data.");
-      else if(err==='structured_missing_summary')alert("This file appears to be a tagger export but has no summary data.");
-      else alert("This file appears to be a tagger export but is missing required fields: "+v.errors.join(', '));
-      return;
-    }
-    canonical=obj;
+  // History
+  const idx=TaggerStore.getIndex();
+  if(!idx.sessions.length){
+    h+='<div class="empty-state">Welcome to the <strong>Aetheria Session Tagger</strong>.<br>Your biofield sessions, your subjective context,<br>held together on your device.<br><br>Import a session from the Coherence Lab or Sophia to begin.</div>';
   } else {
-    const v=validateNativeSave(obj);
-    if(!v.valid){
-      const err=v.errors[0];
-      if(err==='native_missing_session_id')alert("This file appears to be a native Lab session but is missing metadata.sessionId. The file may be corrupted.");
-      else if(err==='native_missing_streams')alert("This file appears to be a native Lab session but has no streams data.");
-      else if(err==='native_missing_coherence')alert("This file appears to be a native Lab session but has no coherence data in streams.");
-      else alert("This file appears to be a native Lab session but is missing required fields: "+v.errors.join(', '));
-      return;
-    }
-    canonical=convertNativeToCanonical(obj);
+    h+='<div class="section-title" style="margin-top:16px">History</div>';
+    idx.sessions.forEach(function(entry){
+      const badge=entry.source==='coherence_lab'?'badge-lab':entry.source==='sophia'?'badge-sophia':'badge-manual';
+      const icon=entry.source==='coherence_lab'?'\u2b21':entry.source==='sophia'?'\u{1F52E}':'\u270F\uFE0F';
+      const dateStr=fmtDate(entry.session_date);
+      const summary=entry.summary_line||'Session';
+      // Load mood_change from context if available
+      let moodHtml='';
+      h+='<div class="history-row" onclick="nav(\'detail\',\''+entry.session_id+'\')">';
+      h+='<div class="source-badge '+badge+'">'+icon+'</div>';
+      h+='<div class="row-body">';
+      h+='<div class="row-date">'+dateStr+'</div>';
+      h+='<div class="row-summary">'+escHtml(summary)+'</div>';
+      h+='</div>';
+      h+=moodHtml;
+      h+='</div>';
+    });
   }
-  const sessionId=canonical.metadata.sessionId;
-  const existing=getExistingSession(sessionId);
-  if(existing){
-    state.importDuplicate={sessionId,importedAt:existing.imported_at,newData:canonical,existingRecord:existing};
-    render();
-    return;
-  }
-  storeImportedSession(canonical,null);
-  const summary=computeSessionSummary(canonical);
-  state.lastImportSummary={summary,metadata:canonical.metadata};
-  render();
-}
 
-function renderImportSummary(sum,meta){
-  const durMin=Math.floor(sum.durationSec/60);
-  const durSec=sum.durationSec%60;
-  const dateStr=meta.startTime?new Date(meta.startTime).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}):'Unknown date';
-  let h='<div class="import-summary">';
-  h+='<h3>Session imported</h3>';
-  h+='<div class="is-line">'+dateStr+' \u00b7 '+durMin+' min '+durSec+' sec</div>';
-  h+='<div class="is-line">Peak TCS: <span class="is-val">'+(sum.peakTCS!=null?sum.peakTCS:'\u2014')+'</span> \u00b7 Mean TCS: <span class="is-val">'+(sum.meanTCS!=null?sum.meanTCS:'\u2014')+'</span> \u00b7 Peak BCS: <span class="is-val">'+(sum.peakBCS!=null?sum.peakBCS:'N/A (pre-Phase 7)')+'</span></div>';
-  h+='<div class="is-line">'+(sum.ptDetected?'Phase transition detected at t='+formatPtTime(sum.ptTime,meta)+'s \u2713':'No phase transition detected')+'</div>';
-  h+='<div class="is-line">'+sum.harmonicLocks+' harmonic lock event'+(sum.harmonicLocks!==1?'s':'')+' \u00b7 '+sum.cascadeFlips+' cascade flip'+(sum.cascadeFlips!==1?'s':'')+'</div>';
-  h+='<div class="is-line">'+sum.rxPlayed+' prescription'+(sum.rxPlayed!==1?'s':'')+' played \u00b7 closed '+(sum.closingType==='graceful'?'gracefully':'by user')+'</div>';
   h+='</div>';
+
+  // Export modal overlay
+  if(state.showExportModal) h+=renderExportModal();
+
   return h;
 }
 
-function renderLabSessionLog(record){
-  const sum=computeSessionSummary(record.session_data);
-  const meta=record.session_data.metadata;
-  const durMin=Math.floor(sum.durationSec/60);
-  const durSec=sum.durationSec%60;
-  let h='<div class="log-entry" style="border-color:var(--blu)">';
-  h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">';
-  h+='<span class="lab-badge">\u2b21 Coherence Lab</span>';
-  h+='<span class="mono" style="font-size:10px;color:var(--sub)">'+durMin+'m '+durSec+'s</span>';
+// ─── DETAIL ───
+function renderDetail(sessionId){
+  const rec=TaggerStore.loadSession(sessionId);
+  if(!rec) return '<div class="back-bar"><button class="back-btn" onclick="nav(\'home\')">\u2190 Back</button></div><div class="content"><div class="empty-state">Session not found.</div></div>';
+
+  const ctx=rec.context||{};
+  let h='<div class="back-bar"><button class="back-btn" onclick="nav(\'home\')">\u2190 Back</button></div>';
+  h+='<div class="content">';
+  h+='<div class="detail-grid">';
+
+  // ── Left: Context (editable) ──
+  h+='<div class="detail-panel">';
+  h+='<h2>Context</h2>';
+  h+=fieldDate('session_date',rec.session_date||'');
+  h+=fieldText('Condition','ctx_condition',ctx.condition||'','e.g. Alignment Playlist, Silent...');
+  h+=fieldSelect('Moon','ctx_moon',ctx.moon||'unknown',MOON_OPTIONS);
+  h+=fieldNumber('Sleep (hours)','ctx_sleep',ctx.sleep,'e.g. 7.5');
+  h+=fieldRange('Mood before','ctx_mood_before',ctx.mood_before,1,10);
+  h+=fieldRange('Mood after','ctx_mood_after',ctx.mood_after,1,10);
+  // Mood change auto
+  const mb=ctx.mood_before,ma=ctx.mood_after;
+  if(typeof mb==='number'&&typeof ma==='number'){
+    const mc=ma-mb;
+    h+='<div class="field-group"><div class="field-label">Mood change</div>';
+    h+='<div class="mood-computed" style="color:'+(mc>=0?'var(--grn)':'var(--red)');+'">'+(mc>=0?'+':'')+mc+'</div></div>';
+  }
+  h+=fieldRange('Pain','ctx_pain',ctx.pain,0,10);
+  h+=fieldText('Activity','ctx_activity',ctx.activity||'','e.g. Working, Relaxing...');
+  h+=fieldTextarea('Notes','ctx_notes',ctx.notes||'','Observations, experiences, what music...');
+  h+='<button class="btn btn-grn" style="margin-top:4px" onclick="saveDetail(\''+escHtml(sessionId)+'\')">Save</button>';
+  h+='<div class="saved-flash" id="detail-saved">Saved</div>';
+  h+='<button class="btn btn-red btn-sm" style="margin-top:12px" onclick="deleteSessionConfirm(\''+escHtml(sessionId)+'\')">Delete session</button>';
   h+='</div>';
-  h+='<div class="log-metrics">';
-  h+='<span>Peak TCS: <span class="log-metric" style="color:var(--gld)">'+(sum.peakTCS!=null?sum.peakTCS:'\u2014')+'</span></span>';
-  h+='<span>Mean: <span class="log-metric" style="color:var(--sub)">'+(sum.meanTCS!=null?sum.meanTCS:'\u2014')+'</span></span>';
-  if(sum.peakBCS!=null)h+='<span>BCS: <span class="log-metric" style="color:var(--pur)">'+sum.peakBCS+'</span></span>';
+
+  // ── Right: Source Data (read-only) ──
+  h+='<div class="detail-panel">';
+  if(rec.source==='coherence_lab') h+=renderSourceLab(rec);
+  else if(rec.source==='sophia') h+=renderSourceSophia(rec);
+  else h+=renderSourceManual(rec);
   h+='</div>';
-  h+='<div style="font-size:10px;color:var(--sub);margin-top:2px">';
-  if(sum.ptDetected)h+='<span style="color:var(--grn)">\u2b21 Phase transition t='+formatPtTime(sum.ptTime,meta)+'s</span> \u00b7 ';
-  h+=sum.harmonicLocks+' harm locks \u00b7 '+sum.cascadeFlips+' flips \u00b7 '+sum.rxPlayed+' Rx';
+
   h+='</div></div>';
   return h;
 }
 
-// Detect CSV type by headers
-function detectCSVType(headerLine){
-  const h=headerLine.toLowerCase();
-  if(h.includes('coherence_pct')&&h.includes('timestamp')&&h.includes('geometry'))return 'sophia';
-  return 'rct';
+// ─── Source renderers ───
+function renderSourceLab(rec){
+  const ri=rec.raw_import||{};
+  const sum=ri.summary||{};
+  const ses=ri.session||{};
+  const meta=ri.metadata||{};
+  const dur=ses.duration_seconds||0;
+  const dm=Math.floor(dur/60),ds=dur%60;
+  let h='<h2>Coherence Lab Session</h2>';
+  h+='<div class="src-meta">Duration: <span class="sv">'+dm+' min '+ds+' sec</span></div>';
+  if(meta.softwareVersion)h+='<div class="src-meta">Software: <span class="sv">v'+meta.softwareVersion+'</span></div>';
+
+  h+='<div class="section-title">Metrics</div>';
+  h+='<div class="metric-grid">';
+  h+=metricRow('Peak TCS',sum.peak_tcs);h+=metricRow('Mean TCS',sum.mean_tcs);
+  h+=metricRow('Peak BCS',sum.peak_bcs);h+=metricRow('Mean BCS',sum.mean_bcs);
+  h+='</div>';
+
+  h+='<div class="section-title">Events</div>';
+  if(sum.phase_transition_detected){
+    const pt=sum.phase_transition_time_seconds;
+    h+='<div class="event-line"><span class="eg">\u2b21 Phase transition detected at t='+(pt!=null?CoherenceLabImport.formatPtTime(pt,meta):'?')+'s \u2713</span></div>';
+  } else {
+    h+='<div class="event-line">No phase transition detected</div>';
+  }
+  h+='<div class="event-line">'+(sum.harm_one_count||0)+' harmonic lock events (harm=1.0)</div>';
+  h+='<div class="event-line">'+(sum.cascade_flips||0)+' cascade flips</div>';
+  h+='<div class="event-line">Closed '+(sum.closing_type==='graceful'?'gracefully':'by user')+'</div>';
+
+  const rxPlayed=(rec.source_data||{}).prescriptions_played||[];
+  if(rxPlayed.length){
+    h+='<div class="section-title">Prescriptions Played ('+rxPlayed.length+')</div>';
+    rxPlayed.forEach(function(rx){
+      const parts=['t='+Math.round(rx.t||0)+'s'];
+      if(rx.frequency)parts.push(rx.frequency+' Hz');
+      h+='<div class="rx-item">'+parts.join(' \u00b7 ')+'</div>';
+    });
+  }
+
+  h+='<div style="margin-top:12px;font-size:10px;color:var(--dim);font-style:italic">Auto-populated from imported session. To annotate, use the Notes field.</div>';
+  return h;
 }
 
-window.importCSVMulti=function(input){
+function renderSourceSophia(rec){
+  const sd=rec.source_data||{};
+  const sum=sd.summary||{};
+  const snaps=sd.snapshots||[];
+  let h='<h2>Sophia Session</h2>';
+  h+='<div class="src-meta">Device: <span class="sv">'+(sd.device||'—')+' ('+SophiaImport.formatDeviceName(sd.device_type)+')</span></div>';
+  h+='<div class="src-meta">Snapshots: <span class="sv">'+snaps.length+'</span></div>';
+  if(sd.first_snapshot_at)h+='<div class="src-meta">First: <span class="sv">'+fmtDate(sd.first_snapshot_at.slice(0,10))+' '+fmtTime(sd.first_snapshot_at)+'</span></div>';
+  if(sd.last_snapshot_at&&snaps.length>1)h+='<div class="src-meta">Last: <span class="sv">'+fmtDate(sd.last_snapshot_at.slice(0,10))+' '+fmtTime(sd.last_snapshot_at)+'</span></div>';
+
+  h+='<div class="section-title">Summary</div>';
+  if(sum.dominant_regime)h+='<div class="src-meta">Dominant Regime: <span class="sv">'+sum.dominant_regime+'</span></div>';
+  if(sum.dominant_geometry)h+='<div class="src-meta">Dominant Geometry: <span class="sv">'+sum.dominant_geometry+'</span></div>';
+  if(sum.hexagrams_encountered&&sum.hexagrams_encountered.length){
+    // Get names from snapshots
+    const hexLabels=[];const seen={};
+    snaps.forEach(function(s){
+      const sym=s.symbolic||{};
+      if(sym.i_ching_hexagram!=null){
+        const k=sym.i_ching_hexagram;
+        if(!seen[k]){seen[k]=true;hexLabels.push('#'+k+(sym.i_ching_name?' '+sym.i_ching_name:''));}
+      }
+    });
+    if(hexLabels.length)h+='<div class="src-meta">Hexagrams: <span class="sv">'+hexLabels.join(', ')+'</span></div>';
+  }
+  h+='<div class="metric-grid">';
+  h+=metricRow('Mean Coherence',sum.mean_coherence!=null?sum.mean_coherence+'%':null);
+  h+=metricRow('Peak Coherence',sum.peak_coherence!=null?sum.peak_coherence+'%':null);
+  h+=metricRow('Mean Focus',sum.mean_focus!=null?sum.mean_focus+'%':null);
+  h+=metricRow('Mean Meditation',sum.mean_meditation!=null?sum.mean_meditation+'%':null);
+  h+='</div>';
+
+  // Snapshots (expandable)
+  if(snaps.length){
+    h+='<div class="section-title">Snapshots ('+snaps.length+')</div>';
+    snaps.forEach(function(s,i){
+      const expanded=!!state.expandedSnapshots[i];
+      const time=s.t?fmtTime(s.t):'';
+      const sym=s.symbolic||{};
+      const met=s.metrics||{};
+      h+='<div class="snap-card" onclick="toggleSnap('+i+')">';
+      h+='<div class="snap-head">';
+      h+='<span class="st">'+time+'</span>';
+      if(s.position!=null)h+=' Pos '+s.position+'/27';
+      if(s.frequency_hz)h+=' \u00b7 '+s.frequency_hz+' Hz';
+      if(s.regime)h+=' '+s.regime;
+      h+='</div>';
+      h+='<div style="font-size:10px;color:var(--sub);margin-top:2px">';
+      const parts=[];
+      if(sym.geometry)parts.push(sym.geometry);
+      if(sym.state)parts.push(sym.state);
+      if(sym.keyword)parts.push(sym.keyword);
+      h+=parts.join(' \u00b7 ');
+      if(sym.i_ching_hexagram!=null) h+='<br>\u2637 #'+sym.i_ching_hexagram+(sym.i_ching_name?' '+sym.i_ching_name:'');
+      h+='</div>';
+      h+='<div style="font-size:10px;color:var(--sub);margin-top:2px">';
+      if(met.coherence!=null)h+='Coh '+met.coherence+'% ';
+      if(met.focus!=null)h+='Focus '+met.focus+'% ';
+      if(met.meditation!=null)h+='Med '+met.meditation+'% ';
+      if(s.heart_rate!=null)h+='HR '+s.heart_rate;
+      h+='</div>';
+      if(expanded){
+        h+='<div class="snap-detail">';
+        const bp=s.band_powers||{};
+        h+='<div class="snap-bands">';
+        const bColors={delta:'#5048C4',theta:'#7B50D4',alpha:'#4A7C59',beta:'#C47A14',gamma:'#A840B8'};
+        ['delta','theta','alpha','beta','gamma'].forEach(function(b){
+          if(bp[b]!=null)h+='<span style="color:'+bColors[b]+'">'+b[0].toUpperCase()+' '+Math.round(bp[b]*100)+'%</span>';
+        });
+        h+='</div>';
+        if(s.fnirs){
+          h+='<div style="margin-top:4px;font-size:9px;color:var(--dim)">fNIRS: ';
+          ['LI','RI','LO','RO'].forEach(function(ch){
+            if(s.fnirs[ch])h+=ch+' SQI:'+((s.fnirs[ch].sqi||0)*100).toFixed(0)+'% ';
+          });
+          h+='</div>';
+        }
+        h+='</div>';
+      }
+      h+='</div>';
+    });
+  }
+
+  h+='<div style="margin-top:12px;font-size:10px;color:var(--dim);font-style:italic">Auto-populated from Sophia exports. To annotate, use the Notes field.</div>';
+  return h;
+}
+
+function renderSourceManual(rec){
+  const sd=rec.source_data||{};
+  let h='<h2>Manual Session</h2>';
+  h+='<div class="field-group"><div class="field-label">Description</div>';
+  h+='<textarea id="manual_desc" placeholder="Describe this session...">'+(escHtml(sd.description||''))+'</textarea></div>';
+  h+='<div style="font-size:10px;color:var(--dim);font-style:italic;margin-top:8px">No imported data. Use the Context fields to capture this session.</div>';
+  return h;
+}
+
+// ─── MANUAL FORM ───
+function renderManualForm(){
+  let h='<div class="back-bar"><button class="back-btn" onclick="nav(\'home\')">\u2190 Cancel</button></div>';
+  h+='<div class="content">';
+  h+='<div class="detail-grid">';
+
+  h+='<div class="detail-panel">';
+  h+='<h2>New Manual Session</h2>';
+  h+=fieldDate('session_date',getToday());
+  h+=fieldText('Condition','ctx_condition','','e.g. Alignment Playlist, Silent...');
+  h+=fieldSelect('Moon','ctx_moon',moonPhase(new Date()),MOON_OPTIONS);
+  h+=fieldNumber('Sleep (hours)','ctx_sleep',null,'e.g. 7.5');
+  h+=fieldRange('Mood before','ctx_mood_before',5,1,10);
+  h+=fieldRange('Mood after','ctx_mood_after',5,1,10);
+  h+=fieldRange('Pain','ctx_pain',0,0,10);
+  h+=fieldText('Activity','ctx_activity','','e.g. Working, Relaxing...');
+  h+=fieldTextarea('Notes','ctx_notes','','Observations, experiences...');
+  h+='<button class="btn btn-grn" style="margin-top:4px" onclick="saveManual()">Save Session</button>';
+  h+='</div>';
+
+  h+='<div class="detail-panel">';
+  h+='<h2>Manual Session</h2>';
+  h+='<div class="field-group"><div class="field-label">Description</div>';
+  h+='<textarea id="manual_desc" placeholder="Describe this session..."></textarea></div>';
+  h+='<div style="font-size:10px;color:var(--dim);font-style:italic;margin-top:8px">No imported data. Use the Context fields to capture this session.</div>';
+  h+='</div>';
+
+  h+='</div></div>';
+  return h;
+}
+
+// ─── LINKS ───
+function renderLinks(){
+  let h='<div class="back-bar"><button class="back-btn" onclick="nav(\'home\')">\u2190 Back</button></div>';
+  h+='<div class="content">';
+  h+='<div class="section-label">Apps & Tools</div>';
+  h+='<a class="lnk" href="https://aetheria432.com" target="_blank"><div class="lnk-icon li-gld">\u{1F3B5}</div><div><h3>Aetheria 432Hz Player</h3><p>27-frequency harmonic healing system</p></div></a>';
+  h+='<a class="lnk" href="https://aetheriarct.com" target="_blank"><div class="lnk-icon li-pur">\u{1F9E0}</div><div><h3>Aetheria RCT</h3><p>Muse 2 EEG neuro-adaptive coherence training</p></div></a>';
+  h+='<a class="lnk" href="https://aetheria-coherence-lab.org" target="_blank"><div class="lnk-icon li-blu">\u2B21</div><div><h3>Aetheria Coherence Lab</h3><p>Adaptive biofield coherence instrument</p></div></a>';
+  h+='<div class="section-label">Sophia</div>';
+  h+='<a class="lnk" href="https://aetheriasos.com" target="_blank"><div class="lnk-icon li-mag">\u{1F52E}</div><div><h3>Sophia</h3><p>Your personal AI companion \u2014 runs locally, no cloud</p></div></a>';
+  h+='<div class="section-label">Books</div>';
+  h+='<a class="lnk" href="https://a.co/d/079tM297" target="_blank"><div class="lnk-icon li-mag">\u{1F4D5}</div><div><h3>Aetheria</h3><p>The frequency healing system \u2014 foundational text</p></div></a>';
+  h+='<a class="lnk" href="https://a.co/d/0c83ZGEu" target="_blank"><div class="lnk-icon li-blu">\u{1F4D8}</div><div><h3>The Golden Thread</h3><p>One equation across all scales \u2014 E=hf as universal key</p></div></a>';
+  h+='<a class="lnk" href="https://a.co/d/0ckEN0Qs" target="_blank"><div class="lnk-icon li-ora">\u{1F4D9}</div><div><h3>Cosmic Rhythms</h3><p>How sun, moon & earth shape your biology</p></div></a>';
+  h+='<a class="lnk" href="https://a.co/d/04Y1pUtE" target="_blank"><div class="lnk-icon li-cor">\u{1F4D7}</div><div><h3>SFB \u2014 A TBI Guide</h3><p>Navigating traumatic brain injury recovery</p></div></a>';
+  h+='<div class="section-label">Music</div>';
+  h+='<a class="lnk" href="https://open.spotify.com/artist/4CXB2ctrUCvInDQkKDhw4q" target="_blank"><div class="lnk-icon li-grn">\u{1F3A7}</div><div><h3>Aetheria on Spotify</h3><p>Frequency-tuned healing music \u2014 432Hz</p></div></a>';
+  h+='<div class="section-label">Interactive Simulations</div>';
+  h+='<div class="sim-grid">';
+  h+='<a class="sim-card" href="https://lilrobodue.github.io/Lewis-Vortex-Model/" target="_blank"><div class="si">\u{1F300}</div><h3>Lewis Vortex Model</h3><p>Formation Theory</p></a>';
+  h+='<a class="sim-card" href="https://lilrobodue.github.io/Unified-Scale-Navigator/" target="_blank"><div class="si">\u{1F52C}</div><h3>Unified Scale Navigator</h3><p>Quantum to cosmic</p></a>';
+  h+='<a class="sim-card" href="https://lilrobodue.github.io/HRV-Coherence-Visualizer/" target="_blank"><div class="si">\u{1F493}</div><h3>HRV Coherence Visualizer</h3><p>Heart rate variability</p></a>';
+  h+='<a class="sim-card" href="https://lilrobodue.github.io/Schumann-Biology-Simulator/" target="_blank"><div class="si">\u{1F30D}</div><h3>Schumann Biology Simulator</h3><p>Earth\'s resonance</p></a>';
+  h+='<a class="sim-card" href="https://lilrobodue.github.io/Cellular-Voltage-Frequency-Model/" target="_blank"><div class="si">\u26A1</div><h3>Cellular Voltage Model</h3><p>Frequency & cell health</p></a>';
+  h+='<a class="sim-card" href="https://lilrobodue.github.io/Galactic-Scale-Vortex-Formation/" target="_blank"><div class="si">\u{1F30C}</div><h3>Galactic Vortex Formation</h3><p>Cosmic scale structure</p></a>';
+  h+='</div>';
+  h+='<div class="section-label">Community & Social</div>';
+  h+='<a class="lnk" href="https://discord.gg/ddR3MfgCsM" target="_blank"><div class="lnk-icon li-blu">\u{1F4AC}</div><div><h3>Th3 L0unG3 \u2014 Discord</h3><p>365+ healing frequency songs \u00b7 community \u00b7 resources</p></div></a>';
+  h+='<a class="lnk" href="https://www.youtube.com/@Aetheria432" target="_blank"><div class="lnk-icon li-cor">\u25B6</div><div><h3>YouTube</h3><p>Aetheria content, demos, and explorations</p></div></a>';
+  h+='<a class="lnk" href="https://x.com/TheyCallmeJobo" target="_blank"><div class="lnk-icon li-ora">\u{1D54F}</div><div><h3>X / Twitter</h3><p>@TheyCallmeJobo \u2014 thoughts, updates, frequencies</p></div></a>';
+  h+='<div class="section-label">Contact</div>';
+  h+='<a class="lnk" href="mailto:Aetheria432@pm.me"><div class="lnk-icon li-gld">\u2709</div><div><h3>Aetheria432@pm.me</h3><p>Questions, collaborations, research inquiries</p></div></a>';
+  h+='</div>';
+  return h;
+}
+
+// ─── Form field helpers ───
+function fieldDate(id,val){return '<div class="field-group"><div class="field-label">Date</div><input type="date" id="'+id+'" value="'+escHtml(val)+'"></div>';}
+function fieldText(label,id,val,ph){return '<div class="field-group"><div class="field-label">'+label+'</div><input type="text" id="'+id+'" value="'+escHtml(val)+'" placeholder="'+escHtml(ph)+'"></div>';}
+function fieldNumber(label,id,val,ph){return '<div class="field-group"><div class="field-label">'+label+'</div><input type="number" id="'+id+'" value="'+(val!=null?val:'')+'" placeholder="'+escHtml(ph)+'" step="0.5" min="0" max="24"></div>';}
+function fieldSelect(label,id,val,opts){let h='<div class="field-group"><div class="field-label">'+label+'</div><select id="'+id+'">';opts.forEach(function(o){h+='<option value="'+escHtml(o.v)+'"'+(val===o.v?' selected':'')+'>'+escHtml(o.l)+'</option>';});h+='</select></div>';return h;}
+function fieldRange(label,id,val,min,max){const v=val!=null?val:min;return '<div class="field-group"><div class="field-label"><span>'+label+'</span><span class="fval" id="'+id+'_val">'+v+'</span></div><input type="range" id="'+id+'" min="'+min+'" max="'+max+'" value="'+v+'" oninput="document.getElementById(\''+id+'_val\').textContent=this.value"></div>';}
+function fieldTextarea(label,id,val,ph){return '<div class="field-group"><div class="field-label">'+label+'</div><textarea id="'+id+'" placeholder="'+escHtml(ph)+'">'+escHtml(val)+'</textarea></div>';}
+function metricRow(label,val){return '<div class="metric-row"><span>'+label+'</span><span class="mv">'+(val!=null?val:'\u2014')+'</span></div>';}
+
+// ─── Import dialog renderers ───
+function renderLabImportSummary(info){
+  const sum=info.summary;const meta=sum.metadata||{};
+  const dm=Math.floor(sum.durationSec/60),ds=sum.durationSec%60;
+  const dateStr=meta.startTime?new Date(meta.startTime).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}):'Unknown date';
+  let h='<div class="import-summary"><h3>\u2713 Session imported from Coherence Lab</h3>';
+  h+='<div class="is-line">'+dateStr+' \u00b7 '+dm+' min '+ds+' sec</div>';
+  h+='<div class="is-line">Peak TCS: <span class="is-val">'+(sum.peakTCS!=null?sum.peakTCS:'\u2014')+'</span> \u00b7 Peak BCS: <span class="is-val">'+(sum.peakBCS!=null?sum.peakBCS:'N/A')+'</span></div>';
+  h+='<div class="is-line">'+(sum.ptDetected?'Phase transition at t='+CoherenceLabImport.formatPtTime(sum.ptTime,meta)+'s \u2713':'No phase transition')+'</div>';
+  h+='<div class="is-line">'+sum.harmonicLocks+' harmonic locks \u00b7 '+sum.cascadeFlips+' flips \u00b7 '+sum.rxPlayed+' Rx</div>';
+  h+='<div class="btn-row" style="justify-content:center">';
+  if(info.record)h+='<button class="btn btn-sm btn-blu" onclick="nav(\'detail\',\''+info.record.session_id+'\');state.lastImportSummary=null;">View session</button>';
+  h+='<button class="btn btn-sm" onclick="state.lastImportSummary=null;render()">Dismiss</button>';
+  h+='</div></div>';
+  return h;
+}
+
+function renderSophiaImportDialog(si){
+  const exp=si.parsedExport;const tl=exp.timeline||[];
+  const firstT=tl.length?new Date(tl[0].t):null;
+  const dateStr=firstT?firstT.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' at '+fmtTime(tl[0].t):'Unknown date';
+  const deviceLabel=exp.device+' ('+SophiaImport.formatDeviceName(exp.deviceType)+')';
+  let h='<div class="import-dup" style="border-color:var(--mag)"><h3 style="color:var(--mag)">Sophia export detected</h3>';
+  h+='<div style="font-size:10px;color:var(--sub);text-align:center;margin-bottom:4px">Device: <span style="color:var(--txt)">'+deviceLabel+'</span></div>';
+  h+='<div style="font-size:10px;color:var(--sub);text-align:center;margin-bottom:8px">Captured: <span style="color:var(--txt)">'+dateStr+'</span> ('+tl.length+' snapshot'+(tl.length!==1?'s':'')+')</div>';
+  h+='<div style="font-size:11px;color:var(--sub);text-align:center;margin-bottom:8px">Create a new session, or append to an existing one?</div>';
+  const sel=si.selectedOption;
+  h+='<div style="margin-bottom:10px">';
+  h+='<label style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:11px;color:var(--txt);border:1px solid '+(sel==='new'?'var(--mag)':'var(--bdr)')+';margin-bottom:4px" onclick="sophiaSelectOption(\'new\')"><input type="radio" name="sophia-opt" '+(sel==='new'?'checked':'')+' style="accent-color:var(--mag)"> Create a new session</label>';
+  si.recentSessions.forEach(function(r){
+    const sid=r.session_id;const label=SophiaImport.sessionTimeLabel(r)+' ('+SophiaImport.sessionSummaryLabel(r)+')';const isSel=(sel===sid);
+    h+='<label style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:11px;color:var(--txt);border:1px solid '+(isSel?'var(--mag)':'var(--bdr)')+';margin-bottom:4px" onclick="sophiaSelectOption(\''+sid+'\')"><input type="radio" name="sophia-opt" '+(isSel?'checked':'')+' style="accent-color:var(--mag)"> Append to: '+escHtml(label)+'</label>';
+  });
+  h+='</div><div class="dup-btns">';
+  h+='<button class="btn btn-sm btn-mag" style="flex:1" onclick="sophiaImportConfirm()">Continue</button>';
+  h+='<button class="btn btn-sm btn-red" style="flex:1" onclick="sophiaImportCancel()">Cancel</button>';
+  h+='</div></div>';
+  return h;
+}
+
+function renderSophiaImportSummary(info){
+  const rec=info.record;const sd=rec.source_data||{};const sum=sd.summary||{};const snaps=sd.snapshots||[];
+  let h='<div class="import-summary" style="border-color:var(--mag)">';
+  if(info.isAppend){
+    const added=sd.snapshot_count-(info.prevCount||0);
+    h+='<h3 style="color:var(--mag)">\u2713 Appended to Sophia session</h3>';
+    h+='<div class="is-line">'+sd.snapshot_count+' snapshots total (was '+(info.prevCount||0)+', added '+added+')</div>';
+  } else {
+    const dateStr=sd.first_snapshot_at?new Date(sd.first_snapshot_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
+    h+='<h3 style="color:var(--mag)">\u2713 New Sophia session imported</h3>';
+    h+='<div class="is-line">'+dateStr+' \u00b7 '+sd.snapshot_count+' snapshot'+(sd.snapshot_count!==1?'s':'')+'</div>';
+    if(snaps[0]){
+      const s0=snaps[0];const sym=s0.symbolic||{};const met=s0.metrics||{};
+      const parts=[];if(s0.regime)parts.push(s0.regime);if(sym.geometry)parts.push(sym.geometry);if(sym.keyword)parts.push(sym.keyword);
+      if(sym.i_ching_hexagram!=null)parts.push('\u2637 #'+sym.i_ching_hexagram+(sym.i_ching_name?' '+sym.i_ching_name:''));
+      if(parts.length)h+='<div class="is-line"><span class="is-val">'+parts.join(' \u00b7 ')+'</span></div>';
+      const mp=[];if(met.coherence!=null)mp.push('Coherence: '+met.coherence+'%');if(met.focus!=null)mp.push('Focus: '+met.focus+'%');if(met.meditation!=null)mp.push('Meditation: '+met.meditation+'%');
+      if(mp.length)h+='<div class="is-line">'+mp.join(' \u00b7 ')+'</div>';
+    }
+  }
+  h+='<div class="btn-row" style="justify-content:center">';
+  h+='<button class="btn btn-sm btn-mag" onclick="nav(\'detail\',\''+rec.session_id+'\');state.lastImportSummary=null;">View session</button>';
+  h+='<button class="btn btn-sm" onclick="state.lastImportSummary=null;render()">Dismiss</button>';
+  h+='</div></div>';
+  return h;
+}
+
+// ═══════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════
+
+// ─── File import (unified) ───
+window.handleFileImport=function(input){
   if(!input.files||!input.files.length)return;
-  Array.from(input.files).forEach(file=>{
+  Array.from(input.files).forEach(function(file){
     const reader=new FileReader();
     reader.onload=function(e){
-      if(file.name.toLowerCase().endsWith('.json')){importLabJSON(e.target.result);}
-      else{importCSVText(e.target.result);}
+      if(file.name.toLowerCase().endsWith('.json')){
+        importJSONText(e.target.result);
+      } else {
+        importCSVText(e.target.result);
+      }
     };
     reader.readAsText(file);
   });
   input.value='';
 };
 
-function importCSVText(text){
-  const firstLine=text.trim().split('\n')[0];
-  const csvType=detectCSVType(firstLine);
-
-  let newSessions;
-  if(csvType==='sophia'){
-    const rows=parseRctCSV(text);
-    const session=aggregateSophiaCSV(rows);
-    newSessions=session?[session]:[];
-  } else {
-    newSessions=parseRctCSV(text);
-  }
-
-  const existing=new Set(state.rctSessions.map(s=>s.date+'|'+s.duration_sec));
-  let added=0;
-  newSessions.forEach(s=>{
-    const key=s.date+'|'+s.duration_sec;
-    if(!existing.has(key)){state.rctSessions.push(s);existing.add(key);added++;}
-  });
-  state.rctSessions.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  save();render();
-  const label=csvType==='sophia'?'Sophia session':'RCT session';
-  alert(added+' new '+label+'(s) imported. Total: '+state.rctSessions.length);
+function importJSONText(text){
+  let obj;try{obj=JSON.parse(text);}catch(e){alert("That file couldn't be read as JSON.");return;}
+  if(!obj||typeof obj!=='object'){alert("That file couldn't be read as JSON.");return;}
+  if(CoherenceLabImport.detectCoherenceLabFormat(obj)!==null){importLabJSON(text);return;}
+  if(SophiaImport.detectSophiaFormat(obj)){handleSophiaImport(text);return;}
+  alert("This doesn't match any known Aetheria format. Supported: Coherence Lab JSON, Sophia JSON.");
 }
 
-window.importCSV=function(input){
-  if(!input.files||!input.files[0])return;
-  const reader=new FileReader();
-  reader.onload=function(e){importCSVText(e.target.result);};
-  reader.readAsText(input.files[0]);
-  input.value='';
-};
-
-window.exportData=function(fmt){
-  const ts=new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
-  let blob,filename;
-  if(fmt==='json'){
-    blob=new Blob([JSON.stringify({
-      system:'Aetheria Session Tagger',
-      export_date:new Date().toISOString(),
-      tagged_sessions:state.sessions,
-      eeg_sessions:state.rctSessions
-    },null,2)],{type:'application/json'});
-    filename=`aetheria_sessions_${ts}.json`;
-  } else {
-    const headers='date,condition,moon,sleep,mood_before,mood_after,mood_change,pain,activity,notes,device_type,best_peak_coh,best_avg_coh,best_start_pos,best_end_pos,best_pos_moved,dominant_shift,heart_rate,avg_focus,avg_meditation,avg_delta,avg_theta,avg_alpha,avg_beta,avg_gamma';
-    const rows=state.sessions.map(s=>{
-      const eeg=eegForDate(s.date);
-      const best=eeg.sort((a,b)=>(b.peak_coherence||0)-(a.peak_coherence||0))[0];
-      return [s.date,s.condition,s.moon||'',s.sleep,s.moodBefore,s.moodAfter,
-        s.moodAfter-s.moodBefore,s.pain,s.activity||'',
-        '"'+(s.notes||'').replace(/"/g,"'")+'"',
-        best?best.device_type||'':'',
-        best?best.peak_coherence:'',best?best.avg_coherence:'',
-        best?best.baseline_pos:'',best?best.endstate_pos:'',
-        best?best.positions_moved:'',
-        best?(best.baseline_dominant||'')+'>'+(best.endstate_dominant||''):'',
-        best?best.heart_rate||'':'',
-        best?best.avg_focus||'':'',best?best.avg_meditation||'':'',
-        best?best.avg_delta||'':'',best?best.avg_theta||'':'',
-        best?best.avg_alpha||'':'',best?best.avg_beta||'':'',
-        best?best.avg_gamma||'':''
-      ].join(',');
-    });
-    blob=new Blob([headers+'\n'+rows.join('\n')],{type:'text/csv'});
-    filename=`aetheria_sessions_${ts}.csv`;
+function importLabJSON(text){
+  const result=CoherenceLabImport.importCoherenceLabFile(text);
+  if(result.status==='error'){alert(result.error);return;}
+  if(result.status==='duplicate'){
+    state.importDuplicate={sessionId:result.record.session_id,importedAt:result.existingRecord.imported_at,newRecord:result.record,existingRecord:result.existingRecord};
+    render();return;
   }
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download=filename;
-  document.body.appendChild(a);a.click();document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-};
+  try{TaggerStore.saveSession(result.record);}catch(e){alert(e.message);return;}
+  state.lastImportSummary={summary:CoherenceLabImport.computeSessionSummary(result.record),record:result.record};
+  render();
+}
 
+function handleSophiaImport(text){
+  const result=SophiaImport.importSophiaFile(text);
+  if(result.status==='error'){alert(result.error);return;}
+  state.sophiaImport={parsedExport:result.parsedExport,recentSessions:result.recentSessions,selectedOption:'new'};
+  state.lastImportSummary=null;state.importDuplicate=null;render();
+}
+
+window.sophiaSelectOption=function(opt){if(state.sophiaImport)state.sophiaImport.selectedOption=opt;render();};
+window.sophiaImportConfirm=function(){
+  const si=state.sophiaImport;if(!si)return;
+  let record,isAppend=false,prevCount=0;
+  if(si.selectedOption==='new'){record=SophiaImport.buildNewSophiaRecord(si.parsedExport);}
+  else{const ex=TaggerStore.loadSession(si.selectedOption);if(!ex){alert('Session not found.');state.sophiaImport=null;render();return;}
+    prevCount=ex.source_data?ex.source_data.snapshot_count||0:0;record=SophiaImport.appendToSophiaRecord(ex,si.parsedExport);isAppend=true;}
+  try{TaggerStore.saveSession(record);}catch(e){alert(e.message);return;}
+  state.sophiaImport=null;
+  state.lastImportSummary={type:'sophia',record:record,isAppend:isAppend,prevCount:prevCount};render();
+};
+window.sophiaImportCancel=function(){state.sophiaImport=null;render();};
+
+// ─── Duplicate handlers ───
 window.dupReimport=function(){
   const dup=state.importDuplicate;if(!dup)return;
-  storeImportedSession(dup.newData,dup.existingRecord);
-  const summary=computeSessionSummary(dup.newData);
-  state.lastImportSummary={summary,metadata:dup.newData.metadata};
-  state.importDuplicate=null;
-  render();
+  const rec=dup.newRecord;
+  if(dup.existingRecord&&dup.existingRecord.context)rec.context=dup.existingRecord.context;
+  rec.imported_at=dup.existingRecord?dup.existingRecord.imported_at:rec.imported_at;
+  try{TaggerStore.saveSession(rec);}catch(e){alert(e.message);return;}
+  state.lastImportSummary={summary:CoherenceLabImport.computeSessionSummary(rec),record:rec};
+  state.importDuplicate=null;render();
 };
 window.dupCancel=function(){state.importDuplicate=null;render();};
-window.dupView=function(){
-  state.importDuplicate=null;state.tab='log';
-  document.querySelectorAll('#tab-bar .tab').forEach(x=>x.classList.remove('on'));
-  document.querySelector('#tab-bar .tab[data-tab="log"]').classList.add('on');
-  render();
-};
-window.clearLabSessions=function(){
-  if(!confirm('Clear all imported Coherence Lab sessions?'))return;
-  let index=[];try{index=JSON.parse(localStorage.getItem('aetheria_tagger:index')||'[]');}catch(e){}
-  index.forEach(id=>localStorage.removeItem('aetheria_tagger:session:'+id));
-  localStorage.removeItem('aetheria_tagger:index');
-  state.lastImportSummary=null;state.importDuplicate=null;
-  render();
-};
+window.dupView=function(){const sid=state.importDuplicate?state.importDuplicate.sessionId:null;state.importDuplicate=null;if(sid)nav('detail',sid);else render();};
 
-// ─── Tab switching ───
-function go(tab){state.tab=tab;render();}
-document.querySelectorAll('#tab-bar .tab').forEach(t=>{
-  t.addEventListener('click',function(){
-    document.querySelectorAll('#tab-bar .tab').forEach(x=>x.classList.remove('on'));
-    this.classList.add('on');
-    go(this.getAttribute('data-tab'));
-  });
-});
-
-// ─── Service Worker ───
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js');
+// ─── CSV import (legacy) ───
+function detectCSVType(h){const l=h.toLowerCase();if(l.includes('coherence_pct')&&l.includes('timestamp')&&l.includes('geometry'))return'sophia';return'rct';}
+function importCSVText(text){
+  const firstLine=text.trim().split('\n')[0];const csvType=detectCSVType(firstLine);
+  let ns;if(csvType==='sophia'){const rows=parseRctCSV(text);const s=aggregateSophiaCSV(rows);ns=s?[s]:[];}else{ns=parseRctCSV(text);}
+  const existing=new Set(state.rctSessions.map(s=>s.date+'|'+s.duration_sec));let added=0;
+  ns.forEach(s=>{const k=s.date+'|'+s.duration_sec;if(!existing.has(k)){state.rctSessions.push(s);existing.add(k);added++;}});
+  state.rctSessions.sort((a,b)=>(b.date||'').localeCompare(a.date||''));save();render();
+  alert(added+' new '+(csvType==='sophia'?'Sophia':'RCT')+' session(s) imported.');
 }
 
+// ─── Export modal ───
+function _exportCounts(){
+  const all=TaggerStore.listAllSessions();
+  const lab=all.filter(function(r){return r.source==='coherence_lab';});
+  const sophia=all.filter(function(r){return r.source==='sophia';});
+  const manual=all.filter(function(r){return r.source==='manual';});
+  var snapCount=0;
+  sophia.forEach(function(r){snapCount+=(r.source_data&&r.source_data.snapshots)?r.source_data.snapshots.length:0;});
+  return{all:all,lab:lab,sophia:sophia,manual:manual,total:all.length,snapCount:snapCount};
+}
+
+function renderExportModal(){
+  var c=_exportCounts();
+  var sel=state.exportSelection;
+  var h='<div class="modal-overlay" onclick="closeExportModal(event)">';
+  h+='<div class="modal-box" onclick="event.stopPropagation()">';
+  h+='<h2>EXPORT YOUR SESSIONS</h2>';
+
+  h+='<div class="modal-section">Per-Source CSVs</div>';
+  h+=_exportOption('lab','Coherence Lab',c.lab.length);
+  h+=_exportOption('sophia','Sophia sessions',c.sophia.length);
+  h+=_exportOption('sophiaSnaps','Sophia snapshots (long)',c.snapCount);
+  h+=_exportOption('manual','Manual',c.manual.length);
+
+  h+='<div class="modal-section">Combined</div>';
+  h+=_exportOption('unified','Unified CSV',c.total);
+  h+=_exportOption('json','Full JSON',c.total);
+
+  h+='<div class="modal-small-actions">';
+  h+='<button onclick="exportSelectAll()">Select All</button>';
+  h+='<button onclick="exportClearAll()">Clear</button>';
+  h+='</div>';
+
+  h+='<div class="modal-actions">';
+  h+='<button class="btn btn-grn" onclick="executeExport()">Export Selected</button>';
+  h+='<button class="btn" style="border-color:var(--dim);color:var(--dim)" onclick="state.showExportModal=false;render()">Cancel</button>';
+  h+='</div>';
+
+  h+='</div></div>';
+  return h;
+}
+
+function _exportOption(key,label,count){
+  var sel=state.exportSelection;
+  var checked=sel[key]?'checked':'';
+  var disabled=count===0?'disabled':'';
+  var cls='export-opt'+(count===0?' disabled':'');
+  return '<label class="'+cls+'"><input type="checkbox" '+checked+' '+disabled+' onchange="state.exportSelection.'+key+'=this.checked"> '+label+'<span class="eo-count">('+count+')</span></label>';
+}
+
+window.openExportModal=function(){
+  state.showExportModal=true;
+  state.exportSelection={lab:false,sophia:false,sophiaSnaps:false,manual:false,unified:false,json:false};
+  render();
+};
+window.closeExportModal=function(e){
+  if(e&&e.target&&e.target.classList.contains('modal-overlay')){
+    state.showExportModal=false;render();
+  }
+};
+window.exportSelectAll=function(){
+  var c=_exportCounts();
+  state.exportSelection={
+    lab:c.lab.length>0,sophia:c.sophia.length>0,
+    sophiaSnaps:c.snapCount>0,manual:c.manual.length>0,
+    unified:c.total>0,json:c.total>0
+  };
+  render();
+};
+window.exportClearAll=function(){
+  state.exportSelection={lab:false,sophia:false,sophiaSnaps:false,manual:false,unified:false,json:false};
+  render();
+};
+window.executeExport=function(){
+  var sel=state.exportSelection;
+  var c=_exportCounts();
+  var today=new Date().toISOString().slice(0,10);
+  var downloads=[];
+
+  if(sel.lab&&c.lab.length)downloads.push({content:TaggerExport.exportCoherenceLabCSV(c.lab),name:'aetheria-coherence-lab-sessions_'+today+'.csv',mime:'text/csv'});
+  if(sel.sophia&&c.sophia.length)downloads.push({content:TaggerExport.exportSophiaCSV(c.sophia),name:'aetheria-sophia-sessions_'+today+'.csv',mime:'text/csv'});
+  if(sel.sophiaSnaps&&c.snapCount)downloads.push({content:TaggerExport.exportSophiaSnapshotsCSV(c.sophia),name:'aetheria-sophia-snapshots_'+today+'.csv',mime:'text/csv'});
+  if(sel.manual&&c.manual.length)downloads.push({content:TaggerExport.exportManualCSV(c.manual),name:'aetheria-manual-sessions_'+today+'.csv',mime:'text/csv'});
+  if(sel.unified&&c.total)downloads.push({content:TaggerExport.exportUnifiedCSV(c.all),name:'aetheria-unified_'+today+'.csv',mime:'text/csv'});
+  if(sel.json&&c.total)downloads.push({content:TaggerExport.exportFullJSON(c.all),name:'aetheria-full_'+today+'.json',mime:'application/json'});
+
+  if(!downloads.length){alert('Select at least one export format.');return;}
+
+  // Sequential downloads with small delay between
+  downloads.forEach(function(dl,i){
+    setTimeout(function(){TaggerExport.downloadAsFile(dl.content,dl.name,dl.mime);},i*300);
+  });
+
+  state.showExportModal=false;
+  render();
+};
+
+// ─── Session detail save ───
+window.saveDetail=function(sessionId){
+  const rec=TaggerStore.loadSession(sessionId);if(!rec)return;
+  const gv=function(id){const el=document.getElementById(id);return el?el.value:null;};
+  const gn=function(id){const v=gv(id);return v!==null&&v!==''?parseFloat(v):null;};
+  const gi=function(id){const v=gv(id);return v!==null&&v!==''?parseInt(v,10):null;};
+
+  rec.session_date=gv('session_date')||rec.session_date;
+  rec.context={
+    condition:gv('ctx_condition')||'',
+    moon:gv('ctx_moon')||'unknown',
+    sleep:gn('ctx_sleep'),
+    mood_before:gi('ctx_mood_before'),
+    mood_after:gi('ctx_mood_after'),
+    mood_change:null,
+    pain:gi('ctx_pain'),
+    activity:gv('ctx_activity')||'',
+    notes:gv('ctx_notes')||''
+  };
+  if(typeof rec.context.mood_before==='number'&&typeof rec.context.mood_after==='number'){
+    rec.context.mood_change=rec.context.mood_after-rec.context.mood_before;
+  }
+  // For manual sessions, save description
+  if(rec.source==='manual'){
+    const desc=gv('manual_desc');
+    if(desc!=null)rec.source_data={description:desc};
+  }
+  try{TaggerStore.saveSession(rec);}catch(e){alert(e.message);return;}
+  const flash=document.getElementById('detail-saved');
+  if(flash){flash.classList.add('show');setTimeout(function(){flash.classList.remove('show');},2000);}
+};
+
+window.deleteSessionConfirm=function(sessionId){
+  if(!confirm('Delete this session permanently?'))return;
+  TaggerStore.deleteSession(sessionId);
+  nav('home');
+};
+
+// ─── Manual session save ───
+window.saveManual=function(){
+  const gv=function(id){const el=document.getElementById(id);return el?el.value:null;};
+  const gn=function(id){const v=gv(id);return v!==null&&v!==''?parseFloat(v):null;};
+  const gi=function(id){const v=gv(id);return v!==null&&v!==''?parseInt(v,10):null;};
+  const now=new Date().toISOString();
+  const sessionId='manual_'+now.replace(/[:.]/g,'-');
+  const mb=gi('ctx_mood_before'),ma=gi('ctx_mood_after');
+  const rec={
+    schema_version:'2.0',
+    session_id:sessionId,
+    source:'manual',
+    imported_at:now,
+    last_edited_at:now,
+    session_date:gv('session_date')||getToday(),
+    context:{
+      condition:gv('ctx_condition')||'',
+      moon:gv('ctx_moon')||'unknown',
+      sleep:gn('ctx_sleep'),
+      mood_before:mb,
+      mood_after:ma,
+      mood_change:(typeof mb==='number'&&typeof ma==='number')?ma-mb:null,
+      pain:gi('ctx_pain'),
+      activity:gv('ctx_activity')||'',
+      notes:gv('ctx_notes')||''
+    },
+    source_data:{description:gv('manual_desc')||''},
+    raw_import:null
+  };
+  try{TaggerStore.saveSession(rec);}catch(e){alert(e.message);return;}
+  nav('home');
+};
+
+// ─── Snapshot toggle ───
+window.toggleSnap=function(i){state.expandedSnapshots[i]=!state.expandedSnapshots[i];render();};
+
+// ═══════════════════════════════════════
+// NAVIGATION (hash-based)
+// ═══════════════════════════════════════
+
+function nav(view,param){
+  if(view==='detail'&&param) location.hash='#session/'+param;
+  else if(view==='new-manual') location.hash='#new-manual';
+  else if(view==='links') location.hash='#links';
+  else location.hash='#home';
+}
+
+function parseHash(){
+  const h=location.hash||'#home';
+  if(h.startsWith('#session/')){
+    state.view='detail';state.currentSessionId=h.slice(9);state.expandedSnapshots={};
+  } else if(h==='#new-manual'){
+    state.view='new-manual';state.currentSessionId=null;
+  } else if(h==='#links'){
+    state.view='links';state.currentSessionId=null;
+  } else {
+    state.view='home';state.currentSessionId=null;
+  }
+}
+
+window.addEventListener('hashchange',function(){parseHash();render();});
+
+// ─── Service Worker ───
+if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js');}
+
 // ─── Boot ───
-load();
-render();
+TaggerStore.init().then(function(){
+  load();
+  parseHash();
+  render();
+}).catch(function(err){
+  console.error('Storage init failed:', err);
+  load();
+  parseHash();
+  render();
+});
 </script>
 </body>
 </html>
