@@ -383,10 +383,13 @@ describe('buildSessionRecord', function () {
     assertEqual(record.source_data.summary.peak_tcs, 82.7);
     assertEqual(record.source_data.prescriptions_played.length, 5);
 
-    // raw_import should have metadata but NOT time_series (stripped to save space)
+    // raw_import should preserve the full structured export including time_series
     assertEqual(record.raw_import.aetheria_export_version, '1.0');
     assertEqual(record.raw_import.summary.peak_tcs, 82.7);
-    assert(record.raw_import.time_series == null, 'time_series should be stripped from raw_import');
+    assert(record.raw_import.time_series != null, 'time_series must be preserved');
+    assert(Array.isArray(record.raw_import.time_series.coherence_t), 'coherence_t is array');
+    assertEqual(record.raw_import.time_series.coherence_t.length, 3);
+    assert(Array.isArray(record.raw_import.time_series.bcs_value), 'bcs_value is array');
   });
 
   it('should produce a v2.0 record from converted native save', function () {
@@ -400,7 +403,8 @@ describe('buildSessionRecord', function () {
     assertEqual(record.session_date, '2026-04-16');
     assert(record.source_data.summary.peak_tcs != null);
     assert(record.raw_import.summary != null, 'raw_import has summary');
-    assert(record.raw_import.time_series == null, 'time_series stripped');
+    assert(record.raw_import.time_series != null, 'time_series preserved');
+    assertEqual(record.raw_import.time_series.coherence_t.length, 5, 'native has 5 coherence points');
   });
 });
 
@@ -504,11 +508,11 @@ describe('importCoherenceLabFile (full orchestration)', function () {
     assert(Array.isArray(recA.source_data.prescriptions_played), 'A has prescriptions_played');
     assert(Array.isArray(recB.source_data.prescriptions_played), 'B has prescriptions_played');
 
-    // Both should have lightweight raw_import (no time_series)
+    // Both should have full raw_import with time_series preserved
     assert(recA.raw_import.summary != null, 'A raw_import has summary');
     assert(recB.raw_import.summary != null, 'B raw_import has summary');
-    assert(recA.raw_import.time_series == null, 'A time_series stripped');
-    assert(recB.raw_import.time_series == null, 'B time_series stripped');
+    assert(recA.raw_import.time_series != null, 'A raw_import has time_series');
+    assert(recB.raw_import.time_series != null, 'B raw_import has time_series');
   });
 });
 

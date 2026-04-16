@@ -216,17 +216,7 @@
         summary:              summary,
         prescriptions_played: prescriptionsPlayed
       },
-      // Store lightweight raw_import — omit time_series (too large for localStorage)
-      raw_import: {
-        aetheria_export_version: structuredExport.aetheria_export_version,
-        export_type:             structuredExport.export_type,
-        exported_at:             structuredExport.exported_at,
-        metadata:                structuredExport.metadata,
-        session:                 structuredExport.session,
-        summary:                 structuredExport.summary,
-        state_transitions:       structuredExport.state_transitions,
-        prescriptions:           structuredExport.prescriptions
-      }
+      raw_import: structuredExport
     };
   }
 
