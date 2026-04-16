@@ -752,8 +752,8 @@ function computeSessionSummary(filtered){
   const st=filtered.streams.state||[];
   const rx=filtered.streams.prescription||[];
 
-  const startT=meta.startTime;
-  const endT=meta.endTime;
+  const startT=meta.startTime?new Date(meta.startTime).getTime():null;
+  const endT=meta.endTime?new Date(meta.endTime).getTime():null;
   const durationSec=(startT&&endT)?Math.round((endT-startT)/1000):0;
 
   const tcsVals=coh.map(c=>c.tcs).filter(v=>v!=null);
@@ -777,7 +777,7 @@ function computeSessionSummary(filtered){
 
 function formatPtTime(t,meta){
   if(t==null)return'?';
-  if(t>1e10&&meta&&meta.startTime)return Math.round((t-meta.startTime)/1000);
+  if(t>1e10&&meta&&meta.startTime)return Math.round((t-new Date(meta.startTime).getTime())/1000);
   return Math.round(t);
 }
 
