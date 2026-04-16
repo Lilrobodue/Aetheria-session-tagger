@@ -59,6 +59,7 @@ input,select,textarea{font-family:inherit}
 .source-badge{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;border:1.5px solid}
 .badge-lab{border-color:var(--blu);color:var(--blu);background:#5048C410}
 .badge-sophia{border-color:var(--mag);color:var(--mag);background:#A840B810}
+.badge-rct{border-color:var(--pur);color:var(--pur);background:#7B50D410}
 .badge-manual{border-color:var(--gld);color:var(--gld);background:#d4a57410}
 .row-body{flex:1;min-width:0}
 .row-date{font-size:11px;color:var(--sub);margin-bottom:2px}
@@ -167,6 +168,7 @@ input[type=range]{width:100%;accent-color:var(--gld)}
 <script src="src/storage/tagger-store.js"></script>
 <script src="src/import/coherence-lab-import.js"></script>
 <script src="src/import/sophia-import.js"></script>
+<script src="src/import/rct-import.js"></script>
 <script src="src/export/tagger-export.js"></script>
 <script>
 // ═══════════════════════════════════════
@@ -187,8 +189,9 @@ let state={
   lastImportSummary:null,
   importDuplicate:null,
   sophiaImport:null,
+  rctImport:null,
   showExportModal:false,
-  exportSelection:{lab:false,sophia:false,sophiaSnaps:false,manual:false,unified:false,json:false},
+  exportSelection:{lab:false,sophia:false,sophiaSnaps:false,rct:false,manual:false,unified:false,json:false},
   // Legacy data (CSV imports, old tagged sessions)
   sessions:[],
   rctSessions:[]
@@ -253,8 +256,10 @@ function renderHome(){
 
   // Import dialogs
   if(state.sophiaImport) h+=renderSophiaImportDialog(state.sophiaImport);
+  if(state.rctImport) h+=renderRCTImportDialog(state.rctImport);
   if(state.lastImportSummary){
     if(state.lastImportSummary.type==='sophia') h+=renderSophiaImportSummary(state.lastImportSummary);
+    else if(state.lastImportSummary.type==='rct') h+=renderRCTImportSummary(state.lastImportSummary);
     else h+=renderLabImportSummary(state.lastImportSummary);
   }
   if(state.importDuplicate){
@@ -276,8 +281,8 @@ function renderHome(){
   } else {
     h+='<div class="section-title" style="margin-top:16px">History</div>';
     idx.sessions.forEach(function(entry){
-      const badge=entry.source==='coherence_lab'?'badge-lab':entry.source==='sophia'?'badge-sophia':'badge-manual';
-      const icon=entry.source==='coherence_lab'?'\u2b21':entry.source==='sophia'?'\u{1F52E}':'\u270F\uFE0F';
+      const badge=entry.source==='coherence_lab'?'badge-lab':entry.source==='sophia'?'badge-sophia':entry.source==='rct'?'badge-rct':'badge-manual';
+      const icon=entry.source==='coherence_lab'?'\u2b21':entry.source==='sophia'?'\u{1F52E}':entry.source==='rct'?'\u{1F9E0}':'\u270F\uFE0F';
       const dateStr=fmtDate(entry.session_date);
       const summary=entry.summary_line||'Session';
       // Load mood_change from context if available
@@ -339,6 +344,7 @@ function renderDetail(sessionId){
   h+='<div class="detail-panel">';
   if(rec.source==='coherence_lab') h+=renderSourceLab(rec);
   else if(rec.source==='sophia') h+=renderSourceSophia(rec);
+  else if(rec.source==='rct') h+=renderSourceRCT(rec);
   else h+=renderSourceManual(rec);
   h+='</div>';
 
@@ -473,6 +479,60 @@ function renderSourceSophia(rec){
   }
 
   h+='<div style="margin-top:12px;font-size:10px;color:var(--dim);font-style:italic">Auto-populated from Sophia exports. To annotate, use the Notes field.</div>';
+  return h;
+}
+
+function renderSourceRCT(rec){
+  const sd=rec.source_data||{};
+  const bl=sd.baseline||{};
+  const es=sd.endstate||{};
+  const dur=sd.duration_seconds||0;
+  const dm=Math.floor(dur/60),ds=dur%60;
+  let h='<h2>RCT Session</h2>';
+  h+='<div class="src-meta">Duration: <span class="sv">'+dm+' min '+ds+' sec</span></div>';
+
+  h+='<div class="section-title">Journey</div>';
+  const startParts=[];
+  if(bl.position!=null) startParts.push('Pos '+bl.position+'/27');
+  if(bl.geometry) startParts.push(bl.geometry);
+  if(bl.frequency_hz) startParts.push(bl.frequency_hz+' Hz');
+  h+='<div class="src-meta">Start: <span class="sv">'+(startParts.join(' \u00b7 ')||'\u2014')+'</span></div>';
+  const endParts=[];
+  if(es.position!=null) endParts.push('Pos '+es.position+'/27');
+  if(es.geometry) endParts.push(es.geometry);
+  if(es.frequency_hz) endParts.push(es.frequency_hz+' Hz');
+  h+='<div class="src-meta">End: <span class="sv">'+(endParts.join(' \u00b7 ')||'\u2014')+'</span></div>';
+  if(typeof sd.positions_moved==='number'){
+    const pm=sd.positions_moved;
+    const dir=pm>0?'ascended':pm<0?'descended':'stayed';
+    h+='<div class="src-meta">Moved: <span class="sv">'+(pm>=0?'+':'')+pm+' positions ('+dir+')</span></div>';
+  }
+  if(bl.dominant_wave||es.dominant_wave){
+    h+='<div class="src-meta">Dominant wave: <span class="sv">'+(bl.dominant_wave||'\u2014')+' \u2192 '+(es.dominant_wave||'\u2014')+'</span></div>';
+  }
+
+  h+='<div class="section-title">Coherence</div>';
+  h+='<div class="metric-grid">';
+  h+=metricRow('Baseline',bl.coherence!=null?bl.coherence+'%':null);
+  h+=metricRow('Peak',sd.peak_coherence!=null?sd.peak_coherence+'%':null);
+  h+=metricRow('Average',sd.avg_coherence!=null?sd.avg_coherence+'%':null);
+  h+=metricRow('End',es.coherence!=null?es.coherence+'%':null);
+  h+='</div>';
+
+  const rxDetail=sd.prescriptions_detail||[];
+  if(rxDetail.length){
+    h+='<div class="section-title">Prescriptions ('+rxDetail.length+')</div>';
+    rxDetail.forEach(function(rx){
+      const parts=[rx.freq+' Hz'];
+      if(rx.keyword) parts.push(rx.keyword);
+      if(rx.script) parts.push(rx.script);
+      if(rx.geometry) parts.push(rx.geometry);
+      if(rx.hexagram!=null) parts.push('\u2637 #'+rx.hexagram+(rx.hexagram_name?' '+rx.hexagram_name:''));
+      h+='<div class="rx-item">'+escHtml(parts.join(' \u00b7 '))+'</div>';
+    });
+  }
+
+  h+='<div style="margin-top:12px;font-size:10px;color:var(--dim);font-style:italic">Auto-populated from RCT export. To annotate, use the Notes field.</div>';
   return h;
 }
 
@@ -628,6 +688,57 @@ function renderSophiaImportSummary(info){
   return h;
 }
 
+function renderRCTImportDialog(ri){
+  const total=ri.totalCount||(ri.sessions?ri.sessions.length:0);
+  const newCount=ri.newCount||0;
+  const dupCount=ri.duplicateCount||0;
+  const range=RCTImport.sessionDateRange(ri.sessions||[]);
+  const rangeStr=(range.first&&range.last)?(fmtDate(range.first)+(range.first!==range.last?' \u2013 '+fmtDate(range.last):'')):'';
+  const version=ri.version?(' v'+ri.version):'';
+  const exported=ri.exportDate?new Date(ri.exportDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
+  let h='<div class="import-dup" style="border-color:var(--pur)"><h3 style="color:var(--pur)">RCT Export Detected</h3>';
+  h+='<div style="font-size:10px;color:var(--sub);text-align:center;margin-bottom:4px">Aetheria Resonant Coherence Training'+version+'</div>';
+  if(exported) h+='<div style="font-size:10px;color:var(--sub);text-align:center;margin-bottom:8px">Exported: <span style="color:var(--txt)">'+exported+'</span></div>';
+  h+='<div style="font-size:11px;color:var(--sub);text-align:center;margin-bottom:6px">Found <span style="color:var(--gld)">'+total+'</span> session'+(total!==1?'s':'')+(rangeStr?' ('+rangeStr+')':'')+'</div>';
+  h+='<div style="font-size:11px;color:var(--sub);text-align:center;margin-bottom:3px">\u251C <span style="color:var(--grn)">'+newCount+' new session'+(newCount!==1?'s':'')+'</span></div>';
+  if(dupCount>0) h+='<div style="font-size:11px;color:var(--sub);text-align:center;margin-bottom:8px">\u2514 <span style="color:var(--dim)">'+dupCount+' already imported (will be skipped)</span></div>';
+  else h+='<div style="font-size:11px;color:var(--sub);text-align:center;margin-bottom:8px">\u2514 <span style="color:var(--dim)">0 already imported</span></div>';
+  h+='<div class="dup-btns">';
+  if(newCount>0) h+='<button class="btn btn-sm" style="flex:1;border-color:var(--pur);color:var(--pur)" onclick="rctImportConfirm()">Import '+newCount+' new session'+(newCount!==1?'s':'')+'</button>';
+  else h+='<button class="btn btn-sm" style="flex:1;opacity:.4;pointer-events:none">Nothing new to import</button>';
+  h+='<button class="btn btn-sm btn-red" style="flex:1" onclick="rctImportCancel()">Cancel</button>';
+  h+='</div></div>';
+  return h;
+}
+
+function renderRCTImportSummary(info){
+  const imported=info.importedRecords||[];
+  const stats=RCTImport.aggregateStats(imported);
+  const range=RCTImport.sessionDateRange(imported);
+  const rangeStr=(range.first&&range.last)?(fmtDate(range.first)+(range.first!==range.last?' \u2013 '+fmtDate(range.last):'')):'';
+  const hours=stats.totalSeconds/3600;
+  const hoursStr=hours>=1?hours.toFixed(1)+' hours':Math.round(stats.totalSeconds/60)+' min';
+  let h='<div class="import-summary" style="border-color:var(--pur)">';
+  h+='<h3 style="color:var(--pur)">\u2713 '+stats.count+' RCT session'+(stats.count!==1?'s':'')+' imported</h3>';
+  if(rangeStr) h+='<div class="is-line">Date range: <span class="is-val">'+rangeStr+'</span></div>';
+  if(stats.peakCoherence!=null){
+    let peakLine='Peak coherence across all: <span class="is-val">'+stats.peakCoherence+'</span>';
+    if(stats.peakRecord&&stats.peakRecord.session_date){
+      peakLine+=' ('+fmtDate(stats.peakRecord.session_date)+' session)';
+    }
+    h+='<div class="is-line">'+peakLine+'</div>';
+  }
+  h+='<div class="is-line">Total session time: <span class="is-val">'+hoursStr+'</span></div>';
+  const avgPm=stats.avgPositionsMoved;
+  const avgSign=avgPm>=0?'+':'';
+  h+='<div class="is-line">Average positions moved: <span class="is-val">'+avgSign+avgPm.toFixed(1)+'</span></div>';
+  h+='<div class="btn-row" style="justify-content:center">';
+  h+='<button class="btn btn-sm" style="border-color:var(--pur);color:var(--pur)" onclick="state.lastImportSummary=null;render()">View history</button>';
+  h+='<button class="btn btn-sm" onclick="state.lastImportSummary=null;nav(\'home\')">Back to home</button>';
+  h+='</div></div>';
+  return h;
+}
+
 // ═══════════════════════════════════════
 // ACTIONS
 // ═══════════════════════════════════════
@@ -654,7 +765,8 @@ function importJSONText(text){
   if(!obj||typeof obj!=='object'){alert("That file couldn't be read as JSON.");return;}
   if(CoherenceLabImport.detectCoherenceLabFormat(obj)!==null){importLabJSON(text);return;}
   if(SophiaImport.detectSophiaFormat(obj)){handleSophiaImport(text);return;}
-  alert("This doesn't match any known Aetheria format. Supported: Coherence Lab JSON, Sophia JSON.");
+  if(RCTImport.detectRCTFormat(obj)){handleRCTImport(text);return;}
+  alert("This doesn't match any known Aetheria format. Supported: Coherence Lab JSON, Sophia JSON, RCT JSON.");
 }
 
 function importLabJSON(text){
@@ -689,6 +801,28 @@ window.sophiaImportConfirm=function(){
 };
 window.sophiaImportCancel=function(){state.sophiaImport=null;render();};
 
+function handleRCTImport(text){
+  const result=RCTImport.importRCTFile(text);
+  if(result.status==='error'){alert(result.error);return;}
+  state.rctImport=result;
+  state.lastImportSummary=null;state.importDuplicate=null;state.sophiaImport=null;
+  render();
+}
+
+window.rctImportConfirm=function(){
+  const ri=state.rctImport;if(!ri)return;
+  const newRecs=ri.newSessions||[];
+  const imported=[];
+  for(let i=0;i<newRecs.length;i++){
+    try{TaggerStore.saveSession(newRecs[i]);imported.push(newRecs[i]);}
+    catch(e){alert('Failed to save session '+newRecs[i].session_id+': '+e.message);}
+  }
+  state.rctImport=null;
+  state.lastImportSummary={type:'rct',importedRecords:imported,duplicateCount:ri.duplicateCount||0};
+  render();
+};
+window.rctImportCancel=function(){state.rctImport=null;render();};
+
 // ─── Duplicate handlers ───
 window.dupReimport=function(){
   const dup=state.importDuplicate;if(!dup)return;
@@ -718,10 +852,11 @@ function _exportCounts(){
   const all=TaggerStore.listAllSessions();
   const lab=all.filter(function(r){return r.source==='coherence_lab';});
   const sophia=all.filter(function(r){return r.source==='sophia';});
+  const rct=all.filter(function(r){return r.source==='rct';});
   const manual=all.filter(function(r){return r.source==='manual';});
   var snapCount=0;
   sophia.forEach(function(r){snapCount+=(r.source_data&&r.source_data.snapshots)?r.source_data.snapshots.length:0;});
-  return{all:all,lab:lab,sophia:sophia,manual:manual,total:all.length,snapCount:snapCount};
+  return{all:all,lab:lab,sophia:sophia,rct:rct,manual:manual,total:all.length,snapCount:snapCount};
 }
 
 function renderExportModal(){
@@ -735,6 +870,7 @@ function renderExportModal(){
   h+=_exportOption('lab','Coherence Lab',c.lab.length);
   h+=_exportOption('sophia','Sophia sessions',c.sophia.length);
   h+=_exportOption('sophiaSnaps','Sophia snapshots (long)',c.snapCount);
+  h+=_exportOption('rct','RCT sessions',c.rct.length);
   h+=_exportOption('manual','Manual',c.manual.length);
 
   h+='<div class="modal-section">Combined</div>';
@@ -765,7 +901,7 @@ function _exportOption(key,label,count){
 
 window.openExportModal=function(){
   state.showExportModal=true;
-  state.exportSelection={lab:false,sophia:false,sophiaSnaps:false,manual:false,unified:false,json:false};
+  state.exportSelection={lab:false,sophia:false,sophiaSnaps:false,rct:false,manual:false,unified:false,json:false};
   render();
 };
 window.closeExportModal=function(e){
@@ -777,13 +913,13 @@ window.exportSelectAll=function(){
   var c=_exportCounts();
   state.exportSelection={
     lab:c.lab.length>0,sophia:c.sophia.length>0,
-    sophiaSnaps:c.snapCount>0,manual:c.manual.length>0,
+    sophiaSnaps:c.snapCount>0,rct:c.rct.length>0,manual:c.manual.length>0,
     unified:c.total>0,json:c.total>0
   };
   render();
 };
 window.exportClearAll=function(){
-  state.exportSelection={lab:false,sophia:false,sophiaSnaps:false,manual:false,unified:false,json:false};
+  state.exportSelection={lab:false,sophia:false,sophiaSnaps:false,rct:false,manual:false,unified:false,json:false};
   render();
 };
 window.executeExport=function(){
@@ -795,6 +931,7 @@ window.executeExport=function(){
   if(sel.lab&&c.lab.length)downloads.push({content:TaggerExport.exportCoherenceLabCSV(c.lab),name:'aetheria-coherence-lab-sessions_'+today+'.csv',mime:'text/csv'});
   if(sel.sophia&&c.sophia.length)downloads.push({content:TaggerExport.exportSophiaCSV(c.sophia),name:'aetheria-sophia-sessions_'+today+'.csv',mime:'text/csv'});
   if(sel.sophiaSnaps&&c.snapCount)downloads.push({content:TaggerExport.exportSophiaSnapshotsCSV(c.sophia),name:'aetheria-sophia-snapshots_'+today+'.csv',mime:'text/csv'});
+  if(sel.rct&&c.rct.length)downloads.push({content:TaggerExport.exportRCTCSV(c.rct),name:'aetheria-rct-sessions_'+today+'.csv',mime:'text/csv'});
   if(sel.manual&&c.manual.length)downloads.push({content:TaggerExport.exportManualCSV(c.manual),name:'aetheria-manual-sessions_'+today+'.csv',mime:'text/csv'});
   if(sel.unified&&c.total)downloads.push({content:TaggerExport.exportUnifiedCSV(c.all),name:'aetheria-unified_'+today+'.csv',mime:'text/csv'});
   if(sel.json&&c.total)downloads.push({content:TaggerExport.exportFullJSON(c.all),name:'aetheria-full_'+today+'.json',mime:'application/json'});

@@ -149,6 +149,42 @@
     return _buildCsv(SNAP_HEADERS, rows);
   }
 
+  // ─── RCT CSV ──────────────────────────────────────────────────
+
+  var RCT_HEADERS = [
+    'session_id', 'session_date', 'source', 'imported_at'
+  ].concat(CTX_HEADERS).concat([
+    'avg_coherence', 'peak_coherence', 'duration_seconds',
+    'baseline_position', 'baseline_dominant_wave', 'baseline_coherence',
+    'baseline_freq', 'baseline_geometry',
+    'endstate_position', 'endstate_dominant_wave', 'endstate_coherence',
+    'endstate_freq', 'endstate_geometry',
+    'positions_moved', 'prescriptions_count', 'prescriptions_freqs'
+  ]);
+
+  function exportRCTCSV(sessions) {
+    var rows = [];
+    for (var i = 0; i < sessions.length; i++) {
+      var r = sessions[i];
+      var sd = r.source_data || {};
+      var bl = sd.baseline || {};
+      var es = sd.endstate || {};
+      var rx = sd.prescriptions_played || [];
+      rows.push([
+        r.session_id, r.session_date, r.source, r.imported_at
+      ].concat(_ctxRow(r)).concat([
+        sd.avg_coherence, sd.peak_coherence, sd.duration_seconds,
+        bl.position, bl.dominant_wave, bl.coherence,
+        bl.frequency_hz, bl.geometry,
+        es.position, es.dominant_wave, es.coherence,
+        es.frequency_hz, es.geometry,
+        sd.positions_moved, sd.prescriptions_count,
+        rx.join(';')
+      ]));
+    }
+    return _buildCsv(RCT_HEADERS, rows);
+  }
+
   // ─── Manual CSV ───────────────────────────────────────────────
 
   var MANUAL_HEADERS = [
@@ -185,6 +221,13 @@
     'sophia_dominant_regime', 'sophia_dominant_geometry', 'sophia_hexagrams',
     'sophia_mean_coherence', 'sophia_peak_coherence',
     'sophia_mean_focus', 'sophia_mean_meditation',
+    // RCT columns
+    'rct_avg_coherence', 'rct_peak_coherence', 'rct_duration_seconds',
+    'rct_baseline_position', 'rct_baseline_dominant_wave', 'rct_baseline_coherence',
+    'rct_baseline_freq', 'rct_baseline_geometry',
+    'rct_endstate_position', 'rct_endstate_dominant_wave', 'rct_endstate_coherence',
+    'rct_endstate_freq', 'rct_endstate_geometry',
+    'rct_positions_moved', 'rct_prescriptions_count', 'rct_prescriptions_freqs',
     // Manual columns
     'manual_description'
   ]);
@@ -203,6 +246,12 @@
       // Sophia fields
       var sophSum = (r.source === 'sophia') ? (sd.summary || {}) : {};
 
+      // RCT fields
+      var isRct = r.source === 'rct';
+      var rctBl = isRct ? (sd.baseline || {}) : {};
+      var rctEs = isRct ? (sd.endstate || {}) : {};
+      var rctRx = isRct ? (sd.prescriptions_played || []) : [];
+
       rows.push([
         r.session_id, r.session_date, r.source, r.imported_at
       ].concat(_ctxRow(r)).concat([
@@ -219,6 +268,16 @@
         r.source === 'sophia' ? sophSum.hexagrams_encountered : null,
         sophSum.mean_coherence, sophSum.peak_coherence,
         sophSum.mean_focus, sophSum.mean_meditation,
+        isRct ? sd.avg_coherence : null,
+        isRct ? sd.peak_coherence : null,
+        isRct ? sd.duration_seconds : null,
+        rctBl.position, rctBl.dominant_wave, rctBl.coherence,
+        rctBl.frequency_hz, rctBl.geometry,
+        rctEs.position, rctEs.dominant_wave, rctEs.coherence,
+        rctEs.frequency_hz, rctEs.geometry,
+        isRct ? sd.positions_moved : null,
+        isRct ? sd.prescriptions_count : null,
+        isRct ? rctRx.join(';') : null,
         r.source === 'manual' ? (sd.description || null) : null
       ]));
     }
@@ -256,6 +315,7 @@
     exportCoherenceLabCSV:    exportCoherenceLabCSV,
     exportSophiaCSV:          exportSophiaCSV,
     exportSophiaSnapshotsCSV: exportSophiaSnapshotsCSV,
+    exportRCTCSV:             exportRCTCSV,
     exportManualCSV:          exportManualCSV,
     exportUnifiedCSV:         exportUnifiedCSV,
     exportFullJSON:           exportFullJSON,

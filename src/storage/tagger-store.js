@@ -16,7 +16,7 @@
   var DB_NAME             = 'aetheria_tagger';
   var DB_VERSION          = 1;
 
-  var ALLOWED_SOURCES = ['coherence_lab', 'sophia', 'manual'];
+  var ALLOWED_SOURCES = ['coherence_lab', 'sophia', 'rct', 'manual'];
 
   // ─── Internal State ───────────────────────────────────────────
 
@@ -210,6 +210,20 @@
       if (sophSummary.hexagrams_encountered && sophSummary.hexagrams_encountered.length) {
         parts.push('\u2637 #' + sophSummary.hexagrams_encountered[0]);
       }
+    } else if (record.source === 'rct') {
+      var rsd = record.source_data || {};
+      var rParts = [];
+      if (typeof rsd.peak_coherence === 'number') rParts.push('Peak ' + rsd.peak_coherence);
+      if (typeof rsd.avg_coherence === 'number')  rParts.push('Avg ' + rsd.avg_coherence);
+      if (typeof rsd.duration_seconds === 'number') rParts.push(Math.round(rsd.duration_seconds / 60) + ' min');
+      var bg = rsd.baseline && rsd.baseline.geometry;
+      var eg = rsd.endstate && rsd.endstate.geometry;
+      if (bg && eg) {
+        var pm = rsd.positions_moved;
+        var pmStr = (typeof pm === 'number') ? (' (' + (pm > 0 ? '+' : '') + pm + ')') : '';
+        rParts.push(bg + ' \u2192 ' + eg + pmStr);
+      }
+      return rParts.join(' \u00b7 ');
     } else if (record.source === 'manual') {
       var ctx = record.context || {};
       var msd = record.source_data || {};

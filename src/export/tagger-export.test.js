@@ -217,7 +217,7 @@ describe('exportUnifiedCSV', function () {
     var all = [makeLabRecord(), makeSophiaRecord(), makeManualRecord()];
     var csv = TaggerExport.exportUnifiedCSV(all);
     var cols = csv.split('\n')[0].split(',');
-    assertEqual(cols.length, 36, 'header columns');
+    assertEqual(cols.length, 52, 'header columns');
   });
 
   it('should produce one row per session regardless of source', function () {
