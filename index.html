@@ -109,6 +109,17 @@ textarea{width:100%;background:var(--bg3);border:1px solid var(--bdr);color:var(
 .sim-card .si{font-size:20px;margin-bottom:4px}
 .sim-card h3{font-size:11px;font-weight:500;line-height:1.3}
 .sim-card p{font-size:8px;color:var(--dim);margin-top:2px}
+
+/* Lab import */
+.lab-badge{display:inline-block;font-size:8px;padding:1px 5px;border-radius:3px;border:1px solid var(--blu);color:var(--blu);font-family:'JetBrains Mono',monospace;vertical-align:middle}
+.import-summary{background:var(--bg2);border:1px solid var(--grn);border-radius:8px;padding:14px;margin-top:10px;text-align:center}
+.import-summary h3{font-size:13px;color:var(--grn);margin-bottom:6px;font-weight:500}
+.import-summary .is-line{font-size:11px;color:var(--sub);margin-bottom:3px}
+.import-summary .is-val{color:var(--gld);font-family:'JetBrains Mono',monospace}
+.import-dup{background:var(--bg2);border:1px solid var(--ora);border-radius:8px;padding:14px;margin-top:10px}
+.import-dup h3{font-size:12px;color:var(--ora);margin-bottom:8px;text-align:center}
+.import-dup p{font-size:10px;color:var(--sub);text-align:center;margin-bottom:8px}
+.import-dup .dup-btns{display:flex;gap:6px}
 </style>
 </head>
 <body>
@@ -146,7 +157,9 @@ let state = {
   sessions:[], // [{date,condition,sleep,moodBefore,moodAfter,pain,activity,notes,timestamp}]
   rctSessions:[], // imported EEG data
   // Current form state
-  form:{condition:null,sleep:5,moodBefore:5,moodAfter:5,pain:1,activity:null,notes:''}
+  form:{condition:null,sleep:5,moodBefore:5,moodAfter:5,pain:1,activity:null,notes:''},
+  lastImportSummary:null,
+  importDuplicate:null
 };
 
 function save(){try{localStorage.setItem('aetheria-tagger',JSON.stringify({sessions:state.sessions,rctSessions:state.rctSessions}));}catch(e){}}
@@ -303,16 +316,26 @@ function render(){
     // Sort dates newest first
     const dates=Object.keys(byDate).sort().reverse();
 
-    if(!dates.length&&!state.rctSessions.length){
-      h+=`<div style="text-align:center;padding:30px 0;color:var(--sub)">No sessions tagged yet. Go to Tag to log your first session.</div>`;
+    // Load imported Coherence Lab sessions grouped by date
+    const labSessions=getImportedSessions();
+    const labByDate={};
+    labSessions.forEach(s=>{
+      const d=labSessionDate(s.session_data.metadata);
+      if(!labByDate[d])labByDate[d]=[];
+      labByDate[d].push(s);
+    });
+
+    if(!dates.length&&!state.rctSessions.length&&!labSessions.length){
+      h+=`<div style="text-align:center;padding:30px 0;color:var(--sub)">No sessions yet. Go to Tag to log your first session, or import one from the Data tab.</div>`;
     }
 
     // Also show dates with EEG data but no tags
     const allDates=new Set([...dates]);
     state.rctSessions.forEach(s=>{if(s.date)allDates.add(utcToLocalDate(s.date));});
+    Object.keys(labByDate).forEach(d=>allDates.add(d));
     const sortedDates=[...allDates].sort().reverse();
 
-    h+=`<div style="font-size:10px;color:var(--dim);text-align:center;margin-bottom:10px">${state.sessions.length} tagged · ${state.rctSessions.length} EEG sessions imported</div>`;
+    h+=`<div style="font-size:10px;color:var(--dim);text-align:center;margin-bottom:10px">${state.sessions.length} tagged · ${state.rctSessions.length} EEG · ${labSessions.length} Lab</div>`;
 
     sortedDates.forEach(date=>{
       const tags=byDate[date]||[];
@@ -352,8 +375,12 @@ function render(){
         });
       }
 
-      if(!tags.length&&eeg.length){
-        h+=`<div style="font-size:9px;color:var(--dim);margin-top:4px">EEG data only — no subjective tag for this day</div>`;
+      // Coherence Lab sessions for this date
+      const labForDate=labByDate[date]||[];
+      labForDate.forEach(s=>{h+=renderLabSessionLog(s);});
+
+      if(!tags.length&&(eeg.length||labForDate.length)){
+        h+=`<div style="font-size:9px;color:var(--dim);margin-top:4px">${labForDate.length?'Coherence Lab':'EEG'} data only — no subjective tag for this day</div>`;
       }
 
       h+=`</div>`;
@@ -366,15 +393,33 @@ function render(){
     h+=`<div class="card">
       <h2>Import Session Data</h2>
       <div class="import-zone" onclick="document.getElementById('csv-input').click()">
-        <input type="file" id="csv-input" accept=".csv" multiple onchange="importCSVMulti(this)">
-        <div style="font-size:12px;color:var(--gld);margin-bottom:4px">Tap to import CSV</div>
-        <div style="font-size:10px;color:var(--dim)">RCT export · Sophia session · Muse 2 or Athena</div>
+        <input type="file" id="csv-input" accept=".csv,.json" multiple onchange="importCSVMulti(this)">
+        <div style="font-size:12px;color:var(--gld);margin-bottom:4px">Tap to import</div>
+        <div style="font-size:10px;color:var(--dim)">Coherence Lab JSON · RCT CSV · Sophia · Athena</div>
       </div>
       ${state.rctSessions.length?`<div style="font-size:10px;color:var(--grn);text-align:center;margin-top:6px">${state.rctSessions.length} EEG sessions loaded</div>`:''}
+      ${getLabSessionCount()?`<div style="font-size:10px;color:var(--blu);text-align:center;margin-top:4px">${getLabSessionCount()} Coherence Lab session${getLabSessionCount()!==1?'s':''} imported</div>`:''}
     </div>`;
+    if(state.lastImportSummary){
+      h+=renderImportSummary(state.lastImportSummary.summary,state.lastImportSummary.metadata);
+    }
+    if(state.importDuplicate){
+      const dup=state.importDuplicate;
+      const dupDate=new Date(dup.importedAt).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+      h+=`<div class="import-dup">
+        <h3>Session already imported</h3>
+        <p>This session was imported on ${dupDate}. What would you like to do?</p>
+        <div class="dup-btns">
+          <button class="btn btn-sm" style="flex:1" onclick="dupView()">View existing</button>
+          <button class="btn btn-sm btn-grn" style="flex:1" onclick="dupReimport()">Re-import (keep tags)</button>
+          <button class="btn btn-sm btn-red" style="flex:1" onclick="dupCancel()">Cancel</button>
+        </div>
+      </div>`;
+    }
 
     // Stats
-    if(state.sessions.length||state.rctSessions.length){
+    const labCount=getLabSessionCount();
+    if(state.sessions.length||state.rctSessions.length||labCount){
       const tags=state.sessions;
       const n=tags.length;
       const condCounts={};tags.forEach(t=>{condCounts[t.condition]=(condCounts[t.condition]||0)+1;});
@@ -383,7 +428,8 @@ function render(){
         <div class="stat-row">
           <div class="stat"><div class="stat-val" style="color:var(--gld)">${n}</div><div class="stat-label">Sessions Tagged</div></div>
           <div class="stat"><div class="stat-val" style="color:var(--pur)">${state.rctSessions.length}</div><div class="stat-label">EEG Sessions</div></div>
-          <div class="stat"><div class="stat-val" style="color:var(--blu)">${new Set(tags.map(t=>t.date)).size}</div><div class="stat-label">Days Active</div></div>
+          <div class="stat"><div class="stat-val" style="color:var(--blu)">${labCount}</div><div class="stat-label">Lab Sessions</div></div>
+          <div class="stat"><div class="stat-val" style="color:var(--grn)">${new Set(tags.map(t=>t.date)).size}</div><div class="stat-label">Days Active</div></div>
         </div>
       </div>`;
 
@@ -419,8 +465,9 @@ function render(){
     </div>`;
 
     // Clear
-    h+=`<div style="display:flex;gap:6px;margin-top:8px">
+    h+=`<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
       <button class="btn btn-red btn-sm" style="flex:1" onclick="if(confirm('Clear all imported EEG data?')){state.rctSessions=[];save();render();}">Clear EEG Data</button>
+      <button class="btn btn-red btn-sm" style="flex:1" onclick="clearLabSessions()">Clear Lab Sessions</button>
       <button class="btn btn-red btn-sm" style="flex:1" onclick="if(confirm('Clear all tagged sessions?')){state.sessions=[];save();render();}">Clear Tags</button>
     </div>`;
   }
@@ -429,17 +476,24 @@ function render(){
   if(state.tab==='link'){
     h+=`<div class="section-label">Apps & Tools</div>
 
-    <a class="lnk" href="http://aetheriasos.com/" target="_blank">
-      <div class="lnk-icon li-gld">🔮</div>
-      <div><h3>Sophia — Aetheria Oracle</h3><p>Oracle shaman — tarot, numerology, astrology & more</p></div>
-    </a>
     <a class="lnk" href="https://aetheria432.com" target="_blank">
       <div class="lnk-icon li-gld">🎵</div>
       <div><h3>Aetheria 432Hz Player</h3><p>27-frequency harmonic healing system</p></div>
     </a>
     <a class="lnk" href="https://aetheriarct.com" target="_blank">
       <div class="lnk-icon li-pur">🧠</div>
-      <div><h3>Aetheria RCT</h3><p>Muse 2 / Athena EEG neuro-adaptive coherence training</p></div>
+      <div><h3>Aetheria RCT</h3><p>Muse 2 EEG neuro-adaptive coherence training</p></div>
+    </a>
+    <a class="lnk" href="https://aetheria-coherence-lab.org" target="_blank">
+      <div class="lnk-icon li-blu">⬡</div>
+      <div><h3>Aetheria Coherence Lab</h3><p>Adaptive biofield coherence instrument — H10 + Muse + Woojer</p></div>
+    </a>
+
+    <div class="section-label">Sophia</div>
+
+    <a class="lnk" href="https://aetheriasos.com" target="_blank">
+      <div class="lnk-icon li-mag">🔮</div>
+      <div><h3>Sophia</h3><p>Your personal AI companion — runs locally, no cloud</p></div>
     </a>
 
     <div class="section-label">Books</div>
@@ -663,6 +717,175 @@ function renderEegDetail(s){
   return h;
 }
 
+// ─── Coherence Lab Import ───
+function labSessionDate(meta){
+  if(!meta||!meta.startTime)return 'unknown';
+  const d=new Date(meta.startTime);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+function validateImportedSession(obj){
+  const errors=[];
+  if(!obj||typeof obj!=='object'){errors.push('not_json');return{valid:false,errors};}
+  if(!obj.metadata||typeof obj.metadata!=='object'||!obj.metadata.sessionId||typeof obj.metadata.sessionId!=='string'){
+    errors.push('missing_session_id');
+  }
+  if(!obj.streams||typeof obj.streams!=='object'){
+    errors.push('missing_streams');
+  } else if(!Array.isArray(obj.streams.coherence)){
+    errors.push('missing_coherence');
+  }
+  return{valid:errors.length===0,errors};
+}
+
+function filterSessionStreams(fullSession){
+  const kept=['coherence','bcs','state','prescription','audio','haptic'];
+  const filtered={};
+  kept.forEach(k=>{filtered[k]=fullSession.streams[k]||[];});
+  return{metadata:fullSession.metadata,streams:filtered};
+}
+
+function computeSessionSummary(filtered){
+  const meta=filtered.metadata;
+  const coh=filtered.streams.coherence||[];
+  const bcsArr=filtered.streams.bcs||[];
+  const st=filtered.streams.state||[];
+  const rx=filtered.streams.prescription||[];
+
+  const startT=meta.startTime;
+  const endT=meta.endTime;
+  const durationSec=(startT&&endT)?Math.round((endT-startT)/1000):0;
+
+  const tcsVals=coh.map(c=>c.tcs).filter(v=>v!=null);
+  const peakTCS=tcsVals.length?Math.round(Math.max(...tcsVals)*10)/10:null;
+  const meanTCS=tcsVals.length?Math.round(tcsVals.reduce((a,b)=>a+b,0)/tcsVals.length*10)/10:null;
+
+  const bcsVals=bcsArr.map(b=>b.bcs).filter(v=>v!=null);
+  const peakBCS=bcsVals.length?Math.round(Math.max(...bcsVals)*10)/10:null;
+
+  const ptEntry=bcsArr.find(b=>b.phaseTransition===true);
+  const ptDetected=!!ptEntry;
+  const ptTime=ptEntry?ptEntry.t:null;
+
+  const harmonicLocks=coh.filter(c=>c.harm===1.0).length;
+  const cascadeFlips=st.filter(s=>s.reason&&s.reason.toLowerCase().includes('flipped')).length;
+  const rxPlayed=rx.filter(r=>r.action==='play').length;
+  const closingType=st.some(s=>s.to==='CLOSING')?'graceful':'user_stopped';
+
+  return{durationSec,peakTCS,meanTCS,peakBCS,ptDetected,ptTime,harmonicLocks,cascadeFlips,rxPlayed,closingType};
+}
+
+function formatPtTime(t,meta){
+  if(t==null)return'?';
+  if(t>1e10&&meta&&meta.startTime)return Math.round((t-meta.startTime)/1000);
+  return Math.round(t);
+}
+
+function getExistingSession(sessionId){
+  try{const r=localStorage.getItem('aetheria_tagger:session:'+sessionId);return r?JSON.parse(r):null;}catch(e){return null;}
+}
+
+function storeImportedSession(filtered,existingRecord){
+  const sessionId=filtered.metadata.sessionId;
+  const now=new Date().toISOString();
+  const record=existingRecord?{
+    session_id:existingRecord.session_id,
+    source:'aetheria_coherence_lab',
+    imported_at:existingRecord.imported_at,
+    last_edited_at:now,
+    session_data:filtered,
+    tags:existingRecord.tags||{}
+  }:{
+    session_id:sessionId,
+    source:'aetheria_coherence_lab',
+    imported_at:now,
+    last_edited_at:now,
+    session_data:filtered,
+    tags:{}
+  };
+  localStorage.setItem('aetheria_tagger:session:'+sessionId,JSON.stringify(record));
+  let index=[];
+  try{index=JSON.parse(localStorage.getItem('aetheria_tagger:index')||'[]');}catch(e){}
+  if(!index.includes(sessionId)){index.unshift(sessionId);localStorage.setItem('aetheria_tagger:index',JSON.stringify(index));}
+  return sessionId;
+}
+
+function getImportedSessions(){
+  let index=[];
+  try{index=JSON.parse(localStorage.getItem('aetheria_tagger:index')||'[]');}catch(e){}
+  return index.map(id=>getExistingSession(id)).filter(Boolean);
+}
+
+function getLabSessionCount(){
+  try{return JSON.parse(localStorage.getItem('aetheria_tagger:index')||'[]').length;}catch(e){return 0;}
+}
+
+function importLabJSON(text){
+  let obj;
+  try{obj=JSON.parse(text);}catch(e){
+    alert("That file couldn't be read as JSON. Make sure you're uploading the file you downloaded from the Coherence Lab (it ends in .json).");
+    return;
+  }
+  const v=validateImportedSession(obj);
+  if(!v.valid){
+    const err=v.errors[0];
+    if(err==='missing_session_id')alert("This file isn't an Aetheria session \u2014 missing required field metadata.sessionId. Are you sure it's from the Coherence Lab?");
+    else if(err==='missing_streams')alert("This file doesn't look like a Coherence Lab session \u2014 no streams data found.");
+    else if(err==='missing_coherence')alert("This file doesn't look like a Coherence Lab session \u2014 missing coherence stream data.");
+    else alert("Couldn't import that file. Please check it's a valid Aetheria Coherence Lab session JSON.");
+    return;
+  }
+  const sessionId=obj.metadata.sessionId;
+  const existing=getExistingSession(sessionId);
+  if(existing){
+    state.importDuplicate={sessionId,importedAt:existing.imported_at,newData:obj,existingRecord:existing};
+    render();
+    return;
+  }
+  const filtered=filterSessionStreams(obj);
+  storeImportedSession(filtered,null);
+  const summary=computeSessionSummary(filtered);
+  state.lastImportSummary={summary,metadata:filtered.metadata};
+  render();
+}
+
+function renderImportSummary(sum,meta){
+  const durMin=Math.floor(sum.durationSec/60);
+  const durSec=sum.durationSec%60;
+  const dateStr=meta.startTime?new Date(meta.startTime).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}):'Unknown date';
+  let h='<div class="import-summary">';
+  h+='<h3>Session imported</h3>';
+  h+='<div class="is-line">'+dateStr+' \u00b7 '+durMin+' min '+durSec+' sec</div>';
+  h+='<div class="is-line">Peak TCS: <span class="is-val">'+(sum.peakTCS!=null?sum.peakTCS:'\u2014')+'</span> \u00b7 Mean TCS: <span class="is-val">'+(sum.meanTCS!=null?sum.meanTCS:'\u2014')+'</span> \u00b7 Peak BCS: <span class="is-val">'+(sum.peakBCS!=null?sum.peakBCS:'N/A (pre-Phase 7)')+'</span></div>';
+  h+='<div class="is-line">'+(sum.ptDetected?'Phase transition detected at t='+formatPtTime(sum.ptTime,meta)+'s \u2713':'No phase transition detected')+'</div>';
+  h+='<div class="is-line">'+sum.harmonicLocks+' harmonic lock event'+(sum.harmonicLocks!==1?'s':'')+' \u00b7 '+sum.cascadeFlips+' cascade flip'+(sum.cascadeFlips!==1?'s':'')+'</div>';
+  h+='<div class="is-line">'+sum.rxPlayed+' prescription'+(sum.rxPlayed!==1?'s':'')+' played \u00b7 closed '+(sum.closingType==='graceful'?'gracefully':'by user')+'</div>';
+  h+='</div>';
+  return h;
+}
+
+function renderLabSessionLog(record){
+  const sum=computeSessionSummary(record.session_data);
+  const meta=record.session_data.metadata;
+  const durMin=Math.floor(sum.durationSec/60);
+  const durSec=sum.durationSec%60;
+  let h='<div class="log-entry" style="border-color:var(--blu)">';
+  h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">';
+  h+='<span class="lab-badge">\u2b21 Coherence Lab</span>';
+  h+='<span class="mono" style="font-size:10px;color:var(--sub)">'+durMin+'m '+durSec+'s</span>';
+  h+='</div>';
+  h+='<div class="log-metrics">';
+  h+='<span>Peak TCS: <span class="log-metric" style="color:var(--gld)">'+(sum.peakTCS!=null?sum.peakTCS:'\u2014')+'</span></span>';
+  h+='<span>Mean: <span class="log-metric" style="color:var(--sub)">'+(sum.meanTCS!=null?sum.meanTCS:'\u2014')+'</span></span>';
+  if(sum.peakBCS!=null)h+='<span>BCS: <span class="log-metric" style="color:var(--pur)">'+sum.peakBCS+'</span></span>';
+  h+='</div>';
+  h+='<div style="font-size:10px;color:var(--sub);margin-top:2px">';
+  if(sum.ptDetected)h+='<span style="color:var(--grn)">\u2b21 Phase transition t='+formatPtTime(sum.ptTime,meta)+'s</span> \u00b7 ';
+  h+=sum.harmonicLocks+' harm locks \u00b7 '+sum.cascadeFlips+' flips \u00b7 '+sum.rxPlayed+' Rx';
+  h+='</div></div>';
+  return h;
+}
+
 // Detect CSV type by headers
 function detectCSVType(headerLine){
   const h=headerLine.toLowerCase();
@@ -674,7 +897,10 @@ window.importCSVMulti=function(input){
   if(!input.files||!input.files.length)return;
   Array.from(input.files).forEach(file=>{
     const reader=new FileReader();
-    reader.onload=function(e){importCSVText(e.target.result);};
+    reader.onload=function(e){
+      if(file.name.toLowerCase().endsWith('.json')){importLabJSON(e.target.result);}
+      else{importCSVText(e.target.result);}
+    };
     reader.readAsText(file);
   });
   input.value='';
@@ -751,6 +977,31 @@ window.exportData=function(fmt){
   const a=document.createElement('a');a.href=url;a.download=filename;
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   URL.revokeObjectURL(url);
+};
+
+window.dupReimport=function(){
+  const dup=state.importDuplicate;if(!dup)return;
+  const filtered=filterSessionStreams(dup.newData);
+  storeImportedSession(filtered,dup.existingRecord);
+  const summary=computeSessionSummary(filtered);
+  state.lastImportSummary={summary,metadata:filtered.metadata};
+  state.importDuplicate=null;
+  render();
+};
+window.dupCancel=function(){state.importDuplicate=null;render();};
+window.dupView=function(){
+  state.importDuplicate=null;state.tab='log';
+  document.querySelectorAll('#tab-bar .tab').forEach(x=>x.classList.remove('on'));
+  document.querySelector('#tab-bar .tab[data-tab="log"]').classList.add('on');
+  render();
+};
+window.clearLabSessions=function(){
+  if(!confirm('Clear all imported Coherence Lab sessions?'))return;
+  let index=[];try{index=JSON.parse(localStorage.getItem('aetheria_tagger:index')||'[]');}catch(e){}
+  index.forEach(id=>localStorage.removeItem('aetheria_tagger:session:'+id));
+  localStorage.removeItem('aetheria_tagger:index');
+  state.lastImportSummary=null;state.importDuplicate=null;
+  render();
 };
 
 // ─── Tab switching ───
