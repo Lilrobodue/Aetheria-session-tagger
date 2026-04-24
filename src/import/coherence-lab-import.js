@@ -88,6 +88,7 @@
     var bcsArr = streams.bcs          || [];
     var st     = streams.state        || [];
     var rx     = streams.prescription || [];
+    var audio  = streams.audio        || [];
 
     // Time series: flatten arrays-of-objects into columnar flat arrays
     var time_series = {
@@ -138,9 +139,16 @@
     }
 
     var closingType = 'user_stopped';
+    var closingReason = null;
     for (var n = 0; n < st.length; n++) {
-      if (st[n].to === 'CLOSING') { closingType = 'graceful'; break; }
+      if (st[n].to === 'CLOSING') {
+        closingType = 'graceful';
+        closingReason = st[n].reason || null;
+        break;
+      }
     }
+
+    var baselineMeta = (meta && typeof meta.baseline === 'object' && meta.baseline !== null) ? meta.baseline : null;
 
     var summary = {
       peak_tcs:                    peakTCS,
@@ -153,7 +161,11 @@
       harm_mean:                   harmMean,
       cascade_flips:               cascadeFlips,
       prescriptions_count:         rxPlayed,
-      closing_type:                closingType
+      closing_type:                closingType,
+      closing_reason:              closingReason,
+      duration_seconds:            durationSec,
+      deficit_majority:            baselineMeta ? (baselineMeta.deficit_majority || null) : null,
+      classification:              baselineMeta ? (baselineMeta.classification || null) : null
     };
 
     return {
@@ -165,16 +177,20 @@
       summary:                 summary,
       time_series:             time_series,
       state_transitions:       st,
-      prescriptions:           rx
+      prescriptions:           rx,
+      audio:                   audio
     };
   }
 
   // ─── Build Tagger Record ──────────────────────────────────────
 
   function buildSessionRecord(structuredExport, sourceFormat) {
-    var meta      = structuredExport.metadata;
-    var summary   = structuredExport.summary || {};
+    var meta      = structuredExport.metadata || {};
+    var summary   = Object.assign({}, structuredExport.summary || {});
     var rx        = structuredExport.prescriptions || [];
+    var audio     = structuredExport.audio || [];
+    var session   = structuredExport.session || {};
+    var stateTx   = structuredExport.state_transitions || [];
     var now       = new Date().toISOString();
 
     // Derive session_date from metadata.startTime
@@ -186,12 +202,78 @@
         String(d.getDate()).padStart(2, '0');
     }
 
-    // Extract prescriptions_played list
+    // Build t → audio lookup for digital_root enrichment
+    var audioByT = {};
+    for (var a = 0; a < audio.length; a++) {
+      if (audio[a] && audio[a].t != null) {
+        audioByT[audio[a].t] = audio[a];
+      }
+    }
+
+    // Normalize prescriptions_played entries
     var prescriptionsPlayed = [];
     for (var i = 0; i < rx.length; i++) {
-      if (rx[i].action === 'play') {
-        prescriptionsPlayed.push(rx[i]);
+      var entry = rx[i];
+      if (!entry || entry.action !== 'play') continue;
+      var audioHit = (entry.t != null) ? audioByT[entry.t] : null;
+      var digitalRoot = null;
+      if (audioHit && audioHit.digital_root != null) digitalRoot = audioHit.digital_root;
+      prescriptionsPlayed.push({
+        t:                      entry.t != null ? entry.t : null,
+        freq:                   entry.freq != null ? entry.freq : null,
+        regime:                 entry.regime || null,
+        name:                   entry.name || null,
+        digital_root:           digitalRoot,
+        rationale:              entry.rationale != null ? entry.rationale : null,
+        classification_at_fire: entry.classification_at_fire != null ? entry.classification_at_fire : null
+      });
+    }
+
+    // Extract baseline from metadata (present in new format, absent in older sessions)
+    var baseline = null;
+    if (meta.baseline && typeof meta.baseline === 'object') {
+      var bl = meta.baseline;
+      var gut   = bl.GUT   || {};
+      var heart = bl.HEART || {};
+      var head  = bl.HEAD  || {};
+      baseline = {
+        deficit_majority: bl.deficit_majority || null,
+        deficit_votes:    bl.deficit_votes    || null,
+        classification:   bl.classification   || null,
+        signal_quality:   bl.signal_quality   || null,
+        breath_rate_bpm:  bl.breath_rate_mean_bpm != null ? bl.breath_rate_mean_bpm : null,
+        iaf_hz:           bl.iaf_hz != null ? bl.iaf_hz : null,
+        regime_means: {
+          GUT:   gut.mean != null ? gut.mean : null,
+          HEART: heart.mean != null ? heart.mean : null,
+          HEAD:  head.mean != null ? head.mean : null
+        },
+        kuramoto_mean:    bl.kuramoto_mean != null ? bl.kuramoto_mean : null
+      };
+    }
+
+    // Fill in summary fields that may be missing on structured-export inputs
+    if (summary.duration_seconds == null) {
+      if (session.duration_seconds != null) {
+        summary.duration_seconds = session.duration_seconds;
+      } else if (meta.startTime && meta.endTime) {
+        summary.duration_seconds = Math.round((new Date(meta.endTime).getTime() - new Date(meta.startTime).getTime()) / 1000);
+      } else {
+        summary.duration_seconds = null;
       }
+    }
+    if (summary.closing_reason === undefined) {
+      var closingReason = null;
+      for (var s = 0; s < stateTx.length; s++) {
+        if (stateTx[s].to === 'CLOSING') { closingReason = stateTx[s].reason || null; break; }
+      }
+      summary.closing_reason = closingReason;
+    }
+    if (summary.deficit_majority === undefined) {
+      summary.deficit_majority = baseline ? baseline.deficit_majority : null;
+    }
+    if (summary.classification === undefined) {
+      summary.classification = baseline ? baseline.classification : null;
     }
 
     return {
@@ -214,6 +296,7 @@
       },
       source_data: {
         summary:              summary,
+        baseline:             baseline,
         prescriptions_played: prescriptionsPlayed
       },
       raw_import: structuredExport
@@ -291,19 +374,26 @@
       summary = record.source_data.summary;
     }
 
+    var durationSec = 0;
+    if (summary.duration_seconds != null) durationSec = summary.duration_seconds;
+    else if (session && session.duration_seconds != null) durationSec = session.duration_seconds;
+
     return {
-      durationSec:   session ? (session.duration_seconds || 0) : 0,
-      peakTCS:       summary.peak_tcs != null ? summary.peak_tcs : null,
-      meanTCS:       summary.mean_tcs != null ? summary.mean_tcs : null,
-      peakBCS:       summary.peak_bcs != null ? summary.peak_bcs : null,
-      meanBCS:       summary.mean_bcs != null ? summary.mean_bcs : null,
-      ptDetected:    !!summary.phase_transition_detected,
-      ptTime:        summary.phase_transition_time_seconds != null ? summary.phase_transition_time_seconds : null,
-      harmonicLocks: summary.harm_one_count || 0,
-      cascadeFlips:  summary.cascade_flips || 0,
-      rxPlayed:      summary.prescriptions_count || 0,
-      closingType:   summary.closing_type || 'user_stopped',
-      metadata:      meta
+      durationSec:    durationSec,
+      peakTCS:        summary.peak_tcs != null ? summary.peak_tcs : null,
+      meanTCS:        summary.mean_tcs != null ? summary.mean_tcs : null,
+      peakBCS:        summary.peak_bcs != null ? summary.peak_bcs : null,
+      meanBCS:        summary.mean_bcs != null ? summary.mean_bcs : null,
+      ptDetected:     !!summary.phase_transition_detected,
+      ptTime:         summary.phase_transition_time_seconds != null ? summary.phase_transition_time_seconds : null,
+      harmonicLocks:  summary.harm_one_count || 0,
+      cascadeFlips:   summary.cascade_flips || 0,
+      rxPlayed:       summary.prescriptions_count || 0,
+      closingType:    summary.closing_type || 'user_stopped',
+      closingReason:  summary.closing_reason != null ? summary.closing_reason : null,
+      deficitMajority: summary.deficit_majority != null ? summary.deficit_majority : null,
+      classification: summary.classification != null ? summary.classification : null,
+      metadata:       meta
     };
   }
 

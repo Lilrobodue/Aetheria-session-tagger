@@ -65,6 +65,9 @@ input,select,textarea{font-family:inherit}
 .row-date{font-size:11px;color:var(--sub);margin-bottom:2px}
 .row-summary{font-size:12px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row-mood{font-size:11px;font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.row-delete{flex-shrink:0;background:none;border:none;color:var(--dim);font-size:14px;font-family:inherit;cursor:pointer;padding:4px 8px;border-radius:4px;line-height:1;opacity:.45;transition:all .15s}
+.history-row:hover .row-delete{opacity:1}
+.row-delete:hover{color:var(--red);background:#C45C5C18}
 
 /* ─── Empty state ─── */
 .empty-state{text-align:center;padding:40px 20px;color:var(--sub);font-size:14px;line-height:1.8}
@@ -294,6 +297,7 @@ function renderHome(){
       h+='<div class="row-summary">'+escHtml(summary)+'</div>';
       h+='</div>';
       h+=moodHtml;
+      h+='<button class="row-delete" title="Delete session" onclick="deleteFromList(\''+escHtml(entry.session_id)+'\',event)">✕</button>';
       h+='</div>';
     });
   }
@@ -354,15 +358,43 @@ function renderDetail(sessionId){
 
 // ─── Source renderers ───
 function renderSourceLab(rec){
+  const sd=rec.source_data||{};
   const ri=rec.raw_import||{};
-  const sum=ri.summary||{};
+  const sum=sd.summary||ri.summary||{};
   const ses=ri.session||{};
   const meta=ri.metadata||{};
-  const dur=ses.duration_seconds||0;
+  const baseline=sd.baseline||null;
+  const dur=sum.duration_seconds!=null?sum.duration_seconds:(ses.duration_seconds||0);
   const dm=Math.floor(dur/60),ds=dur%60;
   let h='<h2>Coherence Lab Session</h2>';
   h+='<div class="src-meta">Duration: <span class="sv">'+dm+' min '+ds+' sec</span></div>';
   if(meta.softwareVersion)h+='<div class="src-meta">Software: <span class="sv">v'+meta.softwareVersion+'</span></div>';
+
+  // Baseline section \u2014 shown first because it drives prescription selection
+  if(baseline){
+    h+='<div class="section-title">Baseline Assessment</div>';
+    if(baseline.signal_quality) h+='<div class="src-meta">Signal quality: <span class="sv">'+escHtml(baseline.signal_quality)+'</span></div>';
+    if(baseline.classification) h+='<div class="src-meta">Classification: <span class="sv">'+escHtml(baseline.classification)+'</span></div>';
+    if(baseline.deficit_majority){
+      const votes=baseline.deficit_votes||{};
+      const majVotes=votes[baseline.deficit_majority];
+      h+='<div class="src-meta">Deficit: <span class="sv">'+escHtml(baseline.deficit_majority)+(majVotes!=null?' ('+majVotes+' votes)':'')+'</span></div>';
+    }
+    if(baseline.breath_rate_bpm!=null) h+='<div class="src-meta">Breath rate: <span class="sv">'+baseline.breath_rate_bpm+' BPM</span></div>';
+    if(baseline.iaf_hz!=null) h+='<div class="src-meta">Individual Alpha: <span class="sv">'+baseline.iaf_hz+' Hz</span></div>';
+    const rm=baseline.regime_means||{};
+    const dv=baseline.deficit_votes||{};
+    const targeted=baseline.deficit_majority;
+    if(rm.GUT!=null||rm.HEART!=null||rm.HEAD!=null){
+      h+='<div style="margin-top:6px;font-size:10px;color:var(--dim);letter-spacing:.08em">Regime baselines:</div>';
+      ['GUT','HEART','HEAD'].forEach(function(reg){
+        if(rm[reg]==null) return;
+        const tag=targeted===reg?' \u2190 targeted':'';
+        const v=(dv[reg]!=null)?(' ('+dv[reg]+' deficit vote'+(dv[reg]!==1?'s':'')+')'):'';
+        h+='<div class="src-meta" style="padding-left:10px">'+reg+': <span class="sv">'+rm[reg].toFixed(3)+'</span><span style="color:var(--sub)">'+v+'</span><span style="color:var(--grn)">'+tag+'</span></div>';
+      });
+    }
+  }
 
   h+='<div class="section-title">Metrics</div>';
   h+='<div class="metric-grid">';
@@ -379,16 +411,29 @@ function renderSourceLab(rec){
   }
   h+='<div class="event-line">'+(sum.harm_one_count||0)+' harmonic lock events (harm=1.0)</div>';
   h+='<div class="event-line">'+(sum.cascade_flips||0)+' cascade flips</div>';
-  h+='<div class="event-line">Closed '+(sum.closing_type==='graceful'?'gracefully':'by user')+'</div>';
 
-  const rxPlayed=(rec.source_data||{}).prescriptions_played||[];
+  const rxPlayed=sd.prescriptions_played||[];
   if(rxPlayed.length){
-    h+='<div class="section-title">Prescriptions Played ('+rxPlayed.length+')</div>';
+    h+='<div class="section-title">Prescriptions ('+rxPlayed.length+')</div>';
     rxPlayed.forEach(function(rx){
-      const parts=['t='+Math.round(rx.t||0)+'s'];
-      if(rx.frequency)parts.push(rx.frequency+' Hz');
-      h+='<div class="rx-item">'+parts.join(' \u00b7 ')+'</div>';
+      const t=rx.t!=null?rx.t:0;
+      const mm=String(Math.floor(t/60)).padStart(2,'0');
+      const ss=String(Math.round(t%60)).padStart(2,'0');
+      let line='<span class="mono" style="color:var(--gld)">'+mm+':'+ss+'</span>';
+      if(rx.freq!=null) line+='  <span class="mono">'+rx.freq+' Hz</span>';
+      if(rx.regime) line+='  <span style="color:var(--sub)">'+escHtml(rx.regime)+'</span>';
+      if(rx.name) line+='  '+escHtml(rx.name);
+      if(rx.digital_root!=null) line+='  <span style="color:var(--pur)">\u232c'+rx.digital_root+'</span>';
+      if(rx.rationale) line+='  <span style="color:var(--ora)">['+escHtml(rx.rationale)+']</span>';
+      h+='<div class="rx-item" style="font-family:inherit;font-size:11px">'+line+'</div>';
     });
+  }
+
+  h+='<div class="section-title">Closing</div>';
+  if(sum.closing_reason){
+    h+='<div class="event-line" style="white-space:normal;line-height:1.4">'+escHtml(sum.closing_reason)+'</div>';
+  } else {
+    h+='<div class="event-line">Closed '+(sum.closing_type==='graceful'?'gracefully':'by user')+'</div>';
   }
 
   h+='<div style="margin-top:12px;font-size:10px;color:var(--dim);font-style:italic">Auto-populated from imported session. To annotate, use the Notes field.</div>';
@@ -629,6 +674,7 @@ function renderLabImportSummary(info){
   let h='<div class="import-summary"><h3>\u2713 Session imported from Coherence Lab</h3>';
   h+='<div class="is-line">'+dateStr+' \u00b7 '+dm+' min '+ds+' sec</div>';
   h+='<div class="is-line">Peak TCS: <span class="is-val">'+(sum.peakTCS!=null?sum.peakTCS:'\u2014')+'</span> \u00b7 Peak BCS: <span class="is-val">'+(sum.peakBCS!=null?sum.peakBCS:'N/A')+'</span></div>';
+  if(sum.deficitMajority) h+='<div class="is-line">Baseline deficit: <span class="is-val">'+escHtml(sum.deficitMajority)+'</span>'+(sum.classification?' \u00b7 '+escHtml(sum.classification):'')+'</div>';
   h+='<div class="is-line">'+(sum.ptDetected?'Phase transition at t='+CoherenceLabImport.formatPtTime(sum.ptTime,meta)+'s \u2713':'No phase transition')+'</div>';
   h+='<div class="is-line">'+sum.harmonicLocks+' harmonic locks \u00b7 '+sum.cascadeFlips+' flips \u00b7 '+sum.rxPlayed+' Rx</div>';
   h+='<div class="btn-row" style="justify-content:center">';
@@ -983,6 +1029,13 @@ window.deleteSessionConfirm=function(sessionId){
   if(!confirm('Delete this session permanently?'))return;
   TaggerStore.deleteSession(sessionId);
   nav('home');
+};
+
+window.deleteFromList=function(sessionId,ev){
+  if(ev){ev.stopPropagation();ev.preventDefault();}
+  if(!confirm('Delete this session permanently?'))return;
+  TaggerStore.deleteSession(sessionId);
+  render();
 };
 
 // ─── Manual session save ───

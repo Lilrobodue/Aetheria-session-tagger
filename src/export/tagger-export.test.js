@@ -115,9 +115,9 @@ describe('exportCoherenceLabCSV', function () {
     var csv = TaggerExport.exportCoherenceLabCSV([makeLabRecord()]);
     var header = csv.split('\n')[0];
     var cols = header.split(',');
-    assertEqual(cols.length, 24, 'header columns');
+    assertEqual(cols.length, 30, 'header columns');
     assert(cols[0] === 'session_id');
-    assert(cols[cols.length - 1] === 'closing_type');
+    assert(cols[cols.length - 1] === 'signal_quality');
   });
 
   it('should produce one data row per record', function () {
@@ -217,7 +217,7 @@ describe('exportUnifiedCSV', function () {
     var all = [makeLabRecord(), makeSophiaRecord(), makeManualRecord()];
     var csv = TaggerExport.exportUnifiedCSV(all);
     var cols = csv.split('\n')[0].split(',');
-    assertEqual(cols.length, 52, 'header columns');
+    assertEqual(cols.length, 58, 'header columns');
   });
 
   it('should produce one row per session regardless of source', function () {

@@ -192,8 +192,15 @@
       if (summary.phase_transition_detected) {
         parts.push('Phase Transition \u2713');
       }
-      if (typeof summary.peak_tcs === 'number') {
+      if (typeof summary.peak_tcs === 'number' && !summary.phase_transition_detected) {
         parts.push('TCS ' + summary.peak_tcs.toFixed(1));
+      }
+      var deficit = summary.deficit_majority || (sd.baseline && sd.baseline.deficit_majority);
+      if (deficit) {
+        parts.push(deficit + ' deficit');
+      }
+      if (typeof summary.duration_seconds === 'number' && summary.duration_seconds > 0) {
+        parts.push(Math.round(summary.duration_seconds / 60) + ' min');
       }
     } else if (record.source === 'sophia') {
       var src = record.source_data || {};

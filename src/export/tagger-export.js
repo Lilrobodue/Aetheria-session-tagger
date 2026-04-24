@@ -59,25 +59,38 @@
     'duration_sec', 'peak_tcs', 'mean_tcs', 'peak_bcs', 'mean_bcs',
     'phase_transition', 'phase_transition_time_sec',
     'harm_one_count', 'harm_mean', 'cascade_flips',
-    'prescriptions_count', 'closing_type'
+    'prescriptions_count', 'closing_type', 'closing_reason',
+    'deficit_majority', 'classification',
+    'breath_rate_bpm', 'iaf_hz', 'signal_quality'
   ]);
+
+  function _labDuration(r, sum, ses) {
+    if (sum && sum.duration_seconds != null) return sum.duration_seconds;
+    if (ses && ses.duration_seconds != null) return ses.duration_seconds;
+    return null;
+  }
 
   function exportCoherenceLabCSV(sessions) {
     var rows = [];
     for (var i = 0; i < sessions.length; i++) {
       var r = sessions[i];
+      var sd = r.source_data || {};
       var ri = r.raw_import || {};
-      var sum = ri.summary || {};
+      var sum = sd.summary || ri.summary || {};
       var ses = ri.session || {};
+      var bl = sd.baseline || null;
       rows.push([
         r.session_id, r.session_date, r.imported_at
       ].concat(_ctxRow(r)).concat([
-        ses.duration_seconds,
+        _labDuration(r, sum, ses),
         sum.peak_tcs, sum.mean_tcs, sum.peak_bcs, sum.mean_bcs,
         sum.phase_transition_detected,
         sum.phase_transition_time_seconds,
         sum.harm_one_count, sum.harm_mean, sum.cascade_flips,
-        sum.prescriptions_count, sum.closing_type
+        sum.prescriptions_count, sum.closing_type, sum.closing_reason,
+        sum.deficit_majority != null ? sum.deficit_majority : (bl && bl.deficit_majority),
+        sum.classification != null ? sum.classification : (bl && bl.classification),
+        bl && bl.breath_rate_bpm, bl && bl.iaf_hz, bl && bl.signal_quality
       ]));
     }
     return _buildCsv(LAB_HEADERS, rows);
@@ -215,7 +228,9 @@
     'lab_peak_bcs', 'lab_mean_bcs',
     'lab_phase_transition', 'lab_phase_transition_time_sec',
     'lab_harm_one_count', 'lab_harm_mean', 'lab_cascade_flips',
-    'lab_prescriptions_count', 'lab_closing_type',
+    'lab_prescriptions_count', 'lab_closing_type', 'lab_closing_reason',
+    'lab_deficit_majority', 'lab_classification',
+    'lab_breath_rate_bpm', 'lab_iaf_hz', 'lab_signal_quality',
     // Sophia columns
     'sophia_device', 'sophia_device_type', 'sophia_snapshot_count',
     'sophia_dominant_regime', 'sophia_dominant_geometry', 'sophia_hexagrams',
@@ -240,8 +255,10 @@
       var sd = r.source_data || {};
 
       // Lab fields
-      var labSum = (r.source === 'coherence_lab') ? (ri.summary || {}) : {};
-      var labSes = (r.source === 'coherence_lab') ? (ri.session || {}) : {};
+      var isLab = r.source === 'coherence_lab';
+      var labSum = isLab ? ((sd && sd.summary) || ri.summary || {}) : {};
+      var labSes = isLab ? (ri.session || {}) : {};
+      var labBl  = isLab ? (sd && sd.baseline) || null : null;
 
       // Sophia fields
       var sophSum = (r.source === 'sophia') ? (sd.summary || {}) : {};
@@ -255,12 +272,15 @@
       rows.push([
         r.session_id, r.session_date, r.source, r.imported_at
       ].concat(_ctxRow(r)).concat([
-        labSes.duration_seconds,
+        isLab ? _labDuration(r, labSum, labSes) : null,
         labSum.peak_tcs, labSum.mean_tcs, labSum.peak_bcs, labSum.mean_bcs,
-        r.source === 'coherence_lab' ? labSum.phase_transition_detected : null,
+        isLab ? labSum.phase_transition_detected : null,
         labSum.phase_transition_time_seconds,
         labSum.harm_one_count, labSum.harm_mean, labSum.cascade_flips,
-        labSum.prescriptions_count, labSum.closing_type,
+        labSum.prescriptions_count, labSum.closing_type, labSum.closing_reason,
+        isLab ? (labSum.deficit_majority != null ? labSum.deficit_majority : (labBl && labBl.deficit_majority)) : null,
+        isLab ? (labSum.classification   != null ? labSum.classification   : (labBl && labBl.classification))   : null,
+        labBl && labBl.breath_rate_bpm, labBl && labBl.iaf_hz, labBl && labBl.signal_quality,
         r.source === 'sophia' ? sd.device : null,
         r.source === 'sophia' ? sd.device_type : null,
         r.source === 'sophia' ? sd.snapshot_count : null,
