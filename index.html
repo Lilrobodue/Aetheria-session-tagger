@@ -294,7 +294,7 @@ function autoProtocolDefaults(rec){
   if(!rec) return {duration_minutes:null,coherence_score:null,dominant_regime:'',classification:''};
   const sd=rec.source_data||{};
   const sum=sd.summary||{};
-  let dur=null,coh=null,reg='';
+  let dur=null,coh=null,reg='',cls='';
   if(rec.source==='coherence_lab'){
     if(sum.duration_seconds!=null) dur=Math.round(sum.duration_seconds/60);
     if(sum.peak_bcs!=null) coh=Math.round(sum.peak_bcs);
@@ -303,6 +303,10 @@ function autoProtocolDefaults(rec){
   } else if(rec.source==='rct'){
     if(sd.duration_seconds!=null) dur=Math.round(sd.duration_seconds/60);
     if(sd.peak_coherence!=null) coh=Math.round(sd.peak_coherence);
+    // New v2 RCT exports include their own regime (from duration_protocol)
+    // and a track classification (from interval_analysis). Suggest both.
+    if(sd.duration_protocol&&sd.duration_protocol.regime) reg=sd.duration_protocol.regime;
+    if(sd.interval_analysis&&sd.interval_analysis.classification) cls=sd.interval_analysis.classification;
   } else if(rec.source==='sophia'){
     if(sd.first_snapshot_at&&sd.last_snapshot_at){
       const d=(new Date(sd.last_snapshot_at)-new Date(sd.first_snapshot_at))/60000;
@@ -310,7 +314,7 @@ function autoProtocolDefaults(rec){
     }
     if(sum.peak_coherence!=null) coh=Math.round(sum.peak_coherence);
   }
-  return {duration_minutes:dur,coherence_score:coh,dominant_regime:reg,classification:''};
+  return {duration_minutes:dur,coherence_score:coh,dominant_regime:reg,classification:cls};
 }
 
 // Render the duration-vs-protocol indicator using IntervalAnalysis.evaluateDuration.
@@ -462,7 +466,7 @@ function renderDetail(sessionId){
   const regimeVal=ctx.dominant_regime!=null?ctx.dominant_regime:(sug.dominant_regime||'');
   const durVal=ctx.duration_minutes!=null?ctx.duration_minutes:sug.duration_minutes;
   const cohVal=ctx.coherence_score!=null?ctx.coherence_score:sug.coherence_score;
-  const classVal=ctx.classification!=null?ctx.classification:'';
+  const classVal=(ctx.classification!=null&&ctx.classification!=='')?ctx.classification:(sug.classification||'');
   h+='<div class="proto-section">';
   h+='<div class="field-label" style="margin-bottom:10px">Session Protocol</div>';
   h+=fieldSelect('Walk type','ctx_walk_type',walkVal,WALK_OPTIONS,'refreshProtoIndicator()');
@@ -666,10 +670,24 @@ function renderSourceRCT(rec){
   const sd=rec.source_data||{};
   const bl=sd.baseline||{};
   const es=sd.endstate||{};
+  const dp=sd.duration_protocol||null;
+  const ia=sd.interval_analysis||null;
   const dur=sd.duration_seconds||0;
   const dm=Math.floor(dur/60),ds=dur%60;
   let h='<h2>RCT Session</h2>';
   h+='<div class="src-meta">Duration: <span class="sv">'+dm+' min '+ds+' sec</span></div>';
+  if(sd.device_type) h+='<div class="src-meta">Device: <span class="sv">'+escHtml(sd.device_type)+'</span></div>';
+  if(dp){
+    // RCT app's own duration-vs-protocol assessment (separate from the
+    // Tagger's context-driven indicator — this one reflects what the RCT
+    // session ITSELF logged at export time).
+    const statusColor=dp.protocol_met?'var(--grn)':(dp.protocol_status==='short'?'var(--ora)':'var(--blu)');
+    const icon=dp.protocol_met?'✓':(dp.protocol_status==='short'?'⚠':'→');
+    h+='<div class="src-meta">RCT protocol: <span style="color:'+statusColor+'">'+icon+' '+escHtml(dp.protocol_status||'')+'</span>';
+    if(dp.regime) h+=' <span style="color:var(--sub)">('+escHtml(dp.regime)+' target '+(dp.minimum_minutes||'?')+'–'+(dp.recommended_minutes||'?')+' min)</span>';
+    h+='</div>';
+    if(dp.note) h+='<div class="src-meta" style="font-size:10px;color:var(--dim)">'+escHtml(dp.note)+'</div>';
+  }
 
   h+='<div class="section-title">Journey</div>';
   const startParts=[];
@@ -698,6 +716,22 @@ function renderSourceRCT(rec){
   h+=metricRow('Average',sd.avg_coherence!=null?sd.avg_coherence+'%':null);
   h+=metricRow('End',es.coherence!=null?es.coherence+'%':null);
   h+='</div>';
+
+  if(ia){
+    h+='<div class="section-title">Interval Analysis</div>';
+    if(ia.classification){
+      const ic=ia.icon||'';
+      h+='<div class="src-meta">Classification: <span class="sv">'+escHtml(ic)+' '+escHtml(ia.classification)+'</span></div>';
+    }
+    h+='<div class="metric-grid">';
+    h+=metricRow('Coherence score',ia.coherenceScore!=null?ia.coherenceScore:null);
+    h+=metricRow('3-6-9 ratio',ia.ratio369!=null?Math.round(ia.ratio369*100)+'%':null);
+    h+=metricRow('Aetheria intervals',ia.aetheriaIntervalCount!=null?ia.aetheriaIntervalCount:null);
+    h+=metricRow('Harmonic ratios',ia.harmonicRatioCount!=null?ia.harmonicRatioCount:null);
+    h+='</div>';
+    if(ia.dominantRegime) h+='<div class="src-meta">Dominant audio regime: <span class="sv">'+escHtml(ia.dominantRegime)+'</span></div>';
+    if(ia.intervalPairs!=null) h+='<div class="src-meta" style="font-size:10px;color:var(--dim)">'+ia.intervalPairs+' interval pair'+(ia.intervalPairs!==1?'s':'')+' analyzed</div>';
+  }
 
   const rxDetail=sd.prescriptions_detail||[];
   if(rxDetail.length){
@@ -819,7 +853,7 @@ function effectiveSessionStats(rec){
     regime:       (ctx.dominant_regime!=null&&ctx.dominant_regime!=='')?ctx.dominant_regime:(sug.dominant_regime||''),
     duration:     (typeof ctx.duration_minutes==='number')?ctx.duration_minutes:sug.duration_minutes,
     coherence:    (typeof ctx.coherence_score==='number')?ctx.coherence_score:sug.coherence_score,
-    classification:(ctx.classification!=null&&ctx.classification!=='')?ctx.classification:''
+    classification:(ctx.classification!=null&&ctx.classification!=='')?ctx.classification:(sug.classification||'')
   };
 }
 

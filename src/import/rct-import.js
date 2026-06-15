@@ -55,8 +55,12 @@
           errors.push('sessions[' + i + '].peakCoh must be a number');
           break;
         }
-        if (typeof s.duration !== 'number') {
-          errors.push('sessions[' + i + '].duration must be a number');
+        // duration may be a number (legacy: seconds) OR an object with
+        // a numeric `actual` (new RCT exports: minutes + protocol metadata).
+        var dOk = (typeof s.duration === 'number') ||
+                  (s.duration && typeof s.duration === 'object' && typeof s.duration.actual === 'number');
+        if (!dOk) {
+          errors.push('sessions[' + i + '].duration must be a number or an object with numeric actual');
           break;
         }
       }
@@ -112,6 +116,33 @@
       };
     });
 
+    // Duration: legacy (number) is in seconds; new shape ({actual, ...}) is in
+    // minutes. Normalize to seconds for storage and keep the rich metadata.
+    var durationSeconds = null;
+    var durationProtocol = null;
+    if (typeof rctSession.duration === 'number') {
+      durationSeconds = rctSession.duration;
+    } else if (rctSession.duration && typeof rctSession.duration === 'object') {
+      var d = rctSession.duration;
+      if (typeof d.actual === 'number') durationSeconds = Math.round(d.actual * 60);
+      durationProtocol = {
+        actual_minutes:      d.actual != null ? d.actual : null,
+        recommended_minutes: d.recommended != null ? d.recommended : null,
+        minimum_minutes:     d.minimum != null ? d.minimum : null,
+        regime:              d.regime || null,
+        protocol_status:     d.protocolStatus || null,
+        protocol_met:        d.protocolMet != null ? d.protocolMet : null,
+        note:                d.note || null
+      };
+    }
+
+    // Interval analysis (new in v2 RCT exports). Preserve as-is so the UI can
+    // surface classification/coherence/ratio369 without losing detail.
+    var intervalAnalysis = null;
+    if (rctSession.intervalAnalysis && typeof rctSession.intervalAnalysis === 'object') {
+      intervalAnalysis = rctSession.intervalAnalysis;
+    }
+
     return {
       schema_version: '2.0',
       session_id:     sessionIdFor(rctSession),
@@ -131,9 +162,11 @@
         notes:       ''
       },
       source_data: {
-        avg_coherence:    rctSession.avgCoh,
-        peak_coherence:   rctSession.peakCoh,
-        duration_seconds: rctSession.duration,
+        avg_coherence:     rctSession.avgCoh,
+        peak_coherence:    rctSession.peakCoh,
+        duration_seconds:  durationSeconds,
+        duration_protocol: durationProtocol,
+        device_type:       rctSession.deviceType || null,
         baseline: {
           position:      baseline.pos,
           dominant_wave: baseline.dom,
@@ -151,7 +184,8 @@
         positions_moved:       rctSession.positions_moved,
         prescriptions_played:  rxFreqs,
         prescriptions_count:   rxFreqs.length,
-        prescriptions_detail:  prescriptionsDetail
+        prescriptions_detail:  prescriptionsDetail,
+        interval_analysis:     intervalAnalysis
       },
       raw_import: rctSession
     };
