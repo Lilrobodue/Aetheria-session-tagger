@@ -45,11 +45,21 @@
       _ctx(rec, 'mood_change'),
       _ctx(rec, 'pain'),
       _ctx(rec, 'activity'),
-      _ctx(rec, 'notes')
+      _ctx(rec, 'notes'),
+      _ctx(rec, 'walk_type'),
+      _ctx(rec, 'dominant_regime'),
+      _ctx(rec, 'duration_minutes'),
+      _ctx(rec, 'coherence_score'),
+      _ctx(rec, 'classification')
     ];
   }
 
-  var CTX_HEADERS = ['condition', 'moon', 'sleep', 'mood_before', 'mood_after', 'mood_change', 'pain', 'activity', 'notes'];
+  var CTX_HEADERS = [
+    'condition', 'moon', 'sleep',
+    'mood_before', 'mood_after', 'mood_change',
+    'pain', 'activity', 'notes',
+    'walk_type', 'dominant_regime', 'duration_minutes', 'coherence_score', 'classification'
+  ];
 
   // ─── Coherence Lab CSV ────────────────────────────────────────
 

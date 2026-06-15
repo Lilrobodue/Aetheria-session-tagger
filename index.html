@@ -69,6 +69,34 @@ input,select,textarea{font-family:inherit}
 .history-row:hover .row-delete{opacity:1}
 .row-delete:hover{color:var(--red);background:#C45C5C18}
 
+/* ─── Session Protocol section ─── */
+.proto-section{margin:14px 0 6px;padding:8px 0 0;border-top:1px solid var(--bdr)}
+.proto-section .field-label{color:var(--mut);letter-spacing:.1em;text-transform:uppercase;font-size:9px}
+.proto-indicator{font-size:11px;padding:6px 8px;border-radius:6px;margin-top:4px;border:1px solid;display:flex;align-items:flex-start;gap:6px}
+.proto-indicator.proto-optimal{border-color:var(--grn);color:var(--grn);background:#4A7C5910}
+.proto-indicator.proto-short{border-color:var(--ora);color:var(--ora);background:#C47A1410}
+.proto-indicator.proto-extended{border-color:var(--blu);color:var(--blu);background:#5048C410}
+.proto-indicator.proto-unknown{border-color:var(--bdr);color:var(--sub)}
+.proto-indicator .pi-icon{flex-shrink:0;font-size:13px;line-height:1.2}
+.proto-indicator .pi-body{flex:1;line-height:1.35}
+.proto-indicator .pi-detail{display:block;font-size:10px;color:var(--sub);margin-top:2px}
+
+/* ─── Stats view ─── */
+.stat-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:14px 16px;margin-bottom:10px}
+.stat-card h3{font-size:10px;color:var(--mut);letter-spacing:.15em;text-transform:uppercase;margin-bottom:10px;font-weight:500}
+.stat-line{display:flex;justify-content:space-between;font-size:12px;color:var(--sub);padding:4px 0}
+.stat-line .sv{color:var(--gld);font-family:'JetBrains Mono',monospace}
+.stat-bar-row{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:11px}
+.stat-bar-label{flex:0 0 140px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat-bar-track{flex:1;height:8px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.stat-bar-fill{height:100%;background:var(--pur);border-radius:3px}
+.stat-bar-count{flex:0 0 36px;text-align:right;color:var(--gld);font-family:'JetBrains Mono',monospace;font-size:10px}
+.trend-up{color:var(--grn)} .trend-down{color:var(--red)} .trend-flat{color:var(--sub)}
+.chart-wrap{margin-top:10px;background:var(--bg3);border:1px solid var(--bdr);border-radius:6px;padding:10px 8px 4px}
+.chart-wrap svg{display:block;width:100%;height:auto}
+.chart-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:9px;color:var(--sub);margin-top:6px;padding:0 2px;letter-spacing:.05em}
+.chart-legend .ld{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle}
+
 /* ─── Empty state ─── */
 .empty-state{text-align:center;padding:40px 20px;color:var(--sub);font-size:14px;line-height:1.8}
 .empty-state strong{color:var(--gld);font-weight:400}
@@ -168,6 +196,7 @@ input[type=range]{width:100%;accent-color:var(--gld)}
 <body>
 <div id="app"></div>
 
+<script src="interval-analysis.js"></script>
 <script src="src/storage/tagger-store.js"></script>
 <script src="src/import/coherence-lab-import.js"></script>
 <script src="src/import/sophia-import.js"></script>
@@ -183,6 +212,32 @@ const MOON_OPTIONS=[
   {v:'\u{1F313} First Quarter',l:'\u{1F313} First Quarter'},{v:'\u{1F314} Waxing Gibbous',l:'\u{1F314} Waxing Gibbous'},
   {v:'\u{1F315} Full',l:'\u{1F315} Full'},{v:'\u{1F316} Waning Gibbous',l:'\u{1F316} Waning Gibbous'},
   {v:'\u{1F317} Last Quarter',l:'\u{1F317} Last Quarter'},{v:'\u{1F318} Waning Crescent',l:'\u{1F318} Waning Crescent'}
+];
+
+// Session Protocol option lists (multiapp update). Walk names + step counts
+// come from the shared interval-analysis.js (WALK_PROTOCOL / WALK_STEPS).
+const WALK_OPTIONS=[
+  {v:'',l:'None / Free Play'},
+  {v:'Layer Ascent',l:'Layer Ascent (27 steps)'},
+  {v:'Pillar Walk',l:'Pillar Walk (27 steps)'},
+  {v:'Flying Star Vortex',l:'Flying Star Vortex (27 steps)'},
+  {v:'CAB',l:'CAB (81 steps)'},
+  {v:'Ouroboros',l:'Ouroboros (29 steps)'},
+  {v:'CABI',l:'CABI (110 steps)'}
+];
+const REGIME_OPTIONS=[
+  {v:'',l:'Unset'},
+  {v:'GUT',l:'GUT'},
+  {v:'HEART',l:'HEART'},
+  {v:'HEAD',l:'HEAD'},
+  {v:'Mixed',l:'Mixed'}
+];
+const CLASSIFICATION_OPTIONS=[
+  {v:'',l:'Unknown / Not Measured'},
+  {v:'Aetheria Tuned',l:'✦ Aetheria Tuned'},
+  {v:'Harmonically Aligned',l:'◈ Harmonically Aligned'},
+  {v:'Partially Aligned',l:'◇ Partially Aligned'},
+  {v:'Unstructured',l:'○ Unstructured'}
 ];
 
 let state={
@@ -231,6 +286,66 @@ function modeOf(arr){if(!arr.length)return null;const c={};arr.forEach(v=>{c[v]=
 function getLabSessionCount(){return TaggerStore.getIndex().sessions.filter(s=>s.source==='coherence_lab').length;}
 function getSophiaSessionCount(){return TaggerStore.getIndex().sessions.filter(s=>s.source==='sophia').length;}
 
+// ─── Session Protocol helpers ───
+
+// Source-derived defaults for the new context fields. These are SUGGESTIONS;
+// the user can override and persist anything in context.
+function autoProtocolDefaults(rec){
+  if(!rec) return {duration_minutes:null,coherence_score:null,dominant_regime:'',classification:''};
+  const sd=rec.source_data||{};
+  const sum=sd.summary||{};
+  let dur=null,coh=null,reg='';
+  if(rec.source==='coherence_lab'){
+    if(sum.duration_seconds!=null) dur=Math.round(sum.duration_seconds/60);
+    if(sum.peak_bcs!=null) coh=Math.round(sum.peak_bcs);
+    else if(sum.peak_tcs!=null) coh=Math.round(sum.peak_tcs);
+    reg=sum.deficit_majority||(sd.baseline&&sd.baseline.deficit_majority)||'';
+  } else if(rec.source==='rct'){
+    if(sd.duration_seconds!=null) dur=Math.round(sd.duration_seconds/60);
+    if(sd.peak_coherence!=null) coh=Math.round(sd.peak_coherence);
+  } else if(rec.source==='sophia'){
+    if(sd.first_snapshot_at&&sd.last_snapshot_at){
+      const d=(new Date(sd.last_snapshot_at)-new Date(sd.first_snapshot_at))/60000;
+      if(d>0) dur=Math.round(d);
+    }
+    if(sum.peak_coherence!=null) coh=Math.round(sum.peak_coherence);
+  }
+  return {duration_minutes:dur,coherence_score:coh,dominant_regime:reg,classification:''};
+}
+
+// Render the duration-vs-protocol indicator using IntervalAnalysis.evaluateDuration.
+function renderProtocolIndicator(walkType,regime,durationMinutes){
+  const dur=(typeof durationMinutes==='number'&&!isNaN(durationMinutes))?durationMinutes:null;
+  const reg=(regime==='GUT'||regime==='HEART'||regime==='HEAD')?regime:null;
+  // Show neutral placeholder when there's nothing to evaluate against
+  if(!dur&&!reg&&!walkType){
+    return '<div class="proto-indicator proto-unknown"><span class="pi-icon">·</span><span class="pi-body">Set walk type, regime, or duration to see protocol guidance.</span></div>';
+  }
+  const r=IntervalAnalysis.evaluateDuration(reg,dur,walkType||null);
+  if(dur==null){
+    const p=r.protocol;
+    return '<div class="proto-indicator proto-unknown"><span class="pi-icon">·</span><span class="pi-body">'+escHtml(p.label)+'<span class="pi-detail">Recommended: '+p.min+'–'+p.max+' min (optimal '+p.optimal+')</span></span></div>';
+  }
+  let cls='proto-unknown',icon='·';
+  if(r.status==='optimal'){cls='proto-optimal';icon='✓';}
+  else if(r.status==='short'){cls='proto-short';icon='⚠';}
+  else if(r.status==='extended'){cls='proto-extended';icon='→';}
+  return '<div class="proto-indicator '+cls+'"><span class="pi-icon">'+icon+'</span><span class="pi-body">'+escHtml(r.label)+'<span class="pi-detail">'+escHtml(r.protocol.label)+'</span></span></div>';
+}
+
+// Recompute and re-paint just the indicator (without a full re-render) so
+// editing fields feels responsive.
+function refreshProtoIndicator(){
+  const el=document.getElementById('proto-indicator-host');
+  if(!el) return;
+  const gv=function(id){const e=document.getElementById(id);return e?e.value:null;};
+  const walk=gv('ctx_walk_type')||'';
+  const regime=gv('ctx_dominant_regime')||'';
+  const durRaw=gv('ctx_duration_minutes');
+  const dur=durRaw!==null&&durRaw!==''?parseFloat(durRaw):null;
+  el.innerHTML=renderProtocolIndicator(walk,regime,dur);
+}
+
 // ═══════════════════════════════════════
 // RENDER
 // ═══════════════════════════════════════
@@ -240,6 +355,7 @@ function render(){
   if(state.view==='detail'&&state.currentSessionId) el.innerHTML=renderDetail(state.currentSessionId);
   else if(state.view==='new-manual') el.innerHTML=renderManualForm();
   else if(state.view==='links') el.innerHTML=renderLinks();
+  else if(state.view==='stats') el.innerHTML=renderStats();
   else el.innerHTML=renderHome();
 }
 
@@ -253,6 +369,7 @@ function renderHome(){
   h+='<div class="home-actions">';
   h+='<button class="btn btn-grn" style="margin:0" onclick="document.getElementById(\'home-import\').click()">+ Import Session</button>';
   h+='<button class="btn" style="margin:0" onclick="nav(\'new-manual\')">+ New Manual Session</button>';
+  h+='<button class="btn" style="margin:0;border-color:var(--pur);color:var(--pur)" onclick="nav(\'stats\')">Stats</button>';
   h+='<button class="btn" style="margin:0;border-color:var(--dim);color:var(--dim)" onclick="openExportModal()">Export</button>';
   h+='</div>';
   h+='<input type="file" id="home-import" accept=".csv,.json" multiple style="display:none" onchange="handleFileImport(this)">';
@@ -338,6 +455,24 @@ function renderDetail(sessionId){
   }
   h+=fieldRange('Pain','ctx_pain',ctx.pain,0,10);
   h+=fieldText('Activity','ctx_activity',ctx.activity||'','e.g. Working, Relaxing...');
+
+  // ── Session Protocol (multiapp update) ──
+  const sug=autoProtocolDefaults(rec);
+  const walkVal=ctx.walk_type!=null?ctx.walk_type:'';
+  const regimeVal=ctx.dominant_regime!=null?ctx.dominant_regime:(sug.dominant_regime||'');
+  const durVal=ctx.duration_minutes!=null?ctx.duration_minutes:sug.duration_minutes;
+  const cohVal=ctx.coherence_score!=null?ctx.coherence_score:sug.coherence_score;
+  const classVal=ctx.classification!=null?ctx.classification:'';
+  h+='<div class="proto-section">';
+  h+='<div class="field-label" style="margin-bottom:10px">Session Protocol</div>';
+  h+=fieldSelect('Walk type','ctx_walk_type',walkVal,WALK_OPTIONS,'refreshProtoIndicator()');
+  h+=fieldSelect('Dominant regime','ctx_dominant_regime',regimeVal,REGIME_OPTIONS,'refreshProtoIndicator()');
+  h+=fieldNumberGeneric('Duration (minutes)','ctx_duration_minutes',durVal,'e.g. 45',0,360,1,'refreshProtoIndicator()');
+  h+='<div id="proto-indicator-host">'+renderProtocolIndicator(walkVal,regimeVal,typeof durVal==='number'?durVal:null)+'</div>';
+  h+=fieldNumberGeneric('Coherence score (0–100)','ctx_coherence_score',cohVal,'e.g. 82',0,100,1,null);
+  h+=fieldSelect('Track classification','ctx_classification',classVal,CLASSIFICATION_OPTIONS,null);
+  h+='</div>';
+
   h+=fieldTextarea('Notes','ctx_notes',ctx.notes||'','Observations, experiences, what music...');
   h+='<button class="btn btn-grn" style="margin-top:4px" onclick="saveDetail(\''+escHtml(sessionId)+'\')">Save</button>';
   h+='<div class="saved-flash" id="detail-saved">Saved</div>';
@@ -606,6 +741,18 @@ function renderManualForm(){
   h+=fieldRange('Mood after','ctx_mood_after',5,1,10);
   h+=fieldRange('Pain','ctx_pain',0,0,10);
   h+=fieldText('Activity','ctx_activity','','e.g. Working, Relaxing...');
+
+  // ── Session Protocol (multiapp update) ──
+  h+='<div class="proto-section">';
+  h+='<div class="field-label" style="margin-bottom:10px">Session Protocol</div>';
+  h+=fieldSelect('Walk type','ctx_walk_type','',WALK_OPTIONS,'refreshProtoIndicator()');
+  h+=fieldSelect('Dominant regime','ctx_dominant_regime','',REGIME_OPTIONS,'refreshProtoIndicator()');
+  h+=fieldNumberGeneric('Duration (minutes)','ctx_duration_minutes',null,'e.g. 45',0,360,1,'refreshProtoIndicator()');
+  h+='<div id="proto-indicator-host">'+renderProtocolIndicator('','',null)+'</div>';
+  h+=fieldNumberGeneric('Coherence score (0–100)','ctx_coherence_score',null,'e.g. 82',0,100,1,null);
+  h+=fieldSelect('Track classification','ctx_classification','',CLASSIFICATION_OPTIONS,null);
+  h+='</div>';
+
   h+=fieldTextarea('Notes','ctx_notes','','Observations, experiences...');
   h+='<button class="btn btn-grn" style="margin-top:4px" onclick="saveManual()">Save Session</button>';
   h+='</div>';
@@ -657,11 +804,236 @@ function renderLinks(){
   return h;
 }
 
+// ─── STATS ───
+
+// Resolve the "effective" walk/regime/coherence/duration for a session:
+// user-entered context values win; otherwise fall back to source-derived defaults.
+function effectiveSessionStats(rec){
+  const ctx=rec.context||{};
+  const sug=autoProtocolDefaults(rec);
+  return {
+    session_id:   rec.session_id,
+    source:       rec.source,
+    session_date: rec.session_date||null,
+    walk_type:    (ctx.walk_type!=null&&ctx.walk_type!=='')?ctx.walk_type:'',
+    regime:       (ctx.dominant_regime!=null&&ctx.dominant_regime!=='')?ctx.dominant_regime:(sug.dominant_regime||''),
+    duration:     (typeof ctx.duration_minutes==='number')?ctx.duration_minutes:sug.duration_minutes,
+    coherence:    (typeof ctx.coherence_score==='number')?ctx.coherence_score:sug.coherence_score,
+    classification:(ctx.classification!=null&&ctx.classification!=='')?ctx.classification:''
+  };
+}
+
+function computeStats(){
+  const all=TaggerStore.listAllSessions();
+  const enriched=all.map(effectiveSessionStats);
+
+  // Date range across all sessions
+  const dates=enriched.map(s=>s.session_date).filter(Boolean).sort();
+  const firstDate=dates[0]||null,lastDate=dates[dates.length-1]||null;
+  let daySpan=0;
+  if(firstDate&&lastDate){
+    daySpan=Math.round((new Date(lastDate)-new Date(firstDate))/86400000);
+  }
+
+  // Coherence series (chronological, only sessions with a number)
+  const cohSeries=enriched
+    .filter(s=>typeof s.coherence==='number'&&s.session_date)
+    .sort((a,b)=>a.session_date.localeCompare(b.session_date));
+  const cohVals=cohSeries.map(s=>s.coherence);
+  const cohAvg=cohVals.length?cohVals.reduce((a,b)=>a+b,0)/cohVals.length:null;
+  let cohPeak=null,cohPeakRec=null;
+  cohSeries.forEach(s=>{if(cohPeak==null||s.coherence>cohPeak){cohPeak=s.coherence;cohPeakRec=s;}});
+
+  // Trend: compare first third avg vs last third avg
+  let trend=null;
+  if(cohSeries.length>=3){
+    const n=cohSeries.length;
+    const a=cohSeries.slice(0,Math.max(1,Math.floor(n/3)));
+    const b=cohSeries.slice(Math.ceil(2*n/3));
+    const avgA=a.reduce((s,x)=>s+x.coherence,0)/a.length;
+    const avgB=b.reduce((s,x)=>s+x.coherence,0)/b.length;
+    trend={delta:Math.round(avgB-avgA),first:Math.round(avgA),last:Math.round(avgB)};
+  }
+
+  // Walk distribution (including 'None / Free Play' for blank walks)
+  const walkCounts={};
+  enriched.forEach(s=>{const k=s.walk_type||'None / Free Play';walkCounts[k]=(walkCounts[k]||0)+1;});
+  const walkRows=Object.keys(walkCounts).map(k=>({name:k,count:walkCounts[k]}))
+    .sort((a,b)=>b.count-a.count);
+  const mostUsedWalk=walkRows.length?walkRows[0]:null;
+
+  // Duration by regime (only sessions with both)
+  const regGroups={GUT:[],HEART:[],HEAD:[],Mixed:[]};
+  enriched.forEach(s=>{
+    if(s.regime&&regGroups[s.regime]!==undefined&&typeof s.duration==='number'){
+      regGroups[s.regime].push(s.duration);
+    }
+  });
+  const regimeStats=Object.keys(regGroups).map(reg=>{
+    const arr=regGroups[reg];
+    return {regime:reg,count:arr.length,avg:arr.length?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length):null};
+  });
+
+  return {
+    totalSessions:        enriched.length,
+    sessionsWithCoherence:cohSeries.length,
+    firstDate:firstDate,lastDate:lastDate,daySpan:daySpan,
+    cohAvg:cohAvg!=null?Math.round(cohAvg):null,
+    cohPeak:cohPeak,cohPeakRec:cohPeakRec,
+    cohSeries:cohSeries,trend:trend,
+    walkRows:walkRows,mostUsedWalk:mostUsedWalk,
+    regimeStats:regimeStats
+  };
+}
+
+// Colors per classification (falls back to gold when classification is blank)
+const CLASS_COLOR={
+  'Aetheria Tuned':'#d4a574',
+  'Harmonically Aligned':'#7B50D4',
+  'Partially Aligned':'#5048C4',
+  'Unstructured':'#5a4a3a',
+  '':'#d4a574'
+};
+
+// Inline SVG line chart for coherence over time.
+function renderCoherenceChart(series){
+  if(!series.length) return '';
+  const W=560,H=180,padL=32,padR=8,padT=10,padB=22;
+  const innerW=W-padL-padR,innerH=H-padT-padB;
+  const t0=new Date(series[0].session_date).getTime();
+  const t1=new Date(series[series.length-1].session_date).getTime();
+  const tSpan=Math.max(1,t1-t0);
+  const xFor=t=>padL+((new Date(t).getTime()-t0)/tSpan)*innerW;
+  const yFor=v=>padT+(1-v/100)*innerH;
+
+  let svg='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">';
+  // Gridlines + Y labels (0, 25, 50, 75, 100)
+  [0,25,50,75,100].forEach(v=>{
+    const y=yFor(v);
+    svg+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="#1a1520" stroke-width="1"/>';
+    svg+='<text x="'+(padL-4)+'" y="'+(y+3)+'" font-size="8" fill="#5a4a3a" text-anchor="end" font-family="JetBrains Mono,monospace">'+v+'</text>';
+  });
+  // X axis labels (first / midpoint / last date)
+  const dateLabel=d=>{const dt=new Date(d);return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'});};
+  const xLabels=series.length>=3?[series[0].session_date,series[Math.floor(series.length/2)].session_date,series[series.length-1].session_date]:[series[0].session_date,series[series.length-1].session_date];
+  xLabels.forEach((d,i)=>{
+    const x=xFor(d);
+    const anchor=i===0?'start':i===xLabels.length-1?'end':'middle';
+    svg+='<text x="'+x+'" y="'+(H-6)+'" font-size="8" fill="#5a4a3a" text-anchor="'+anchor+'" font-family="JetBrains Mono,monospace">'+dateLabel(d)+'</text>';
+  });
+  // Average reference line
+  const avg=series.reduce((s,p)=>s+p.coherence,0)/series.length;
+  const ya=yFor(avg);
+  svg+='<line x1="'+padL+'" y1="'+ya+'" x2="'+(W-padR)+'" y2="'+ya+'" stroke="#7B50D4" stroke-dasharray="3,3" stroke-width="1" opacity=".5"/>';
+  svg+='<text x="'+(W-padR-2)+'" y="'+(ya-3)+'" font-size="8" fill="#7B50D4" text-anchor="end" font-family="JetBrains Mono,monospace">avg '+Math.round(avg)+'</text>';
+  // Polyline connecting points
+  const path=series.map((p,i)=>(i===0?'M':'L')+xFor(p.session_date).toFixed(1)+' '+yFor(p.coherence).toFixed(1)).join(' ');
+  svg+='<path d="'+path+'" fill="none" stroke="#d4a574" stroke-width="1.5" opacity=".6"/>';
+  // Points
+  series.forEach(p=>{
+    const c=CLASS_COLOR[p.classification||'']||CLASS_COLOR[''];
+    svg+='<circle cx="'+xFor(p.session_date).toFixed(1)+'" cy="'+yFor(p.coherence).toFixed(1)+'" r="3" fill="'+c+'" stroke="#06060c" stroke-width="1"><title>'+escHtml(p.session_date)+': coherence '+p.coherence+(p.classification?' ('+p.classification+')':'')+'</title></circle>';
+  });
+  svg+='</svg>';
+  return svg;
+}
+
+function renderStats(){
+  const s=computeStats();
+  let h='<div class="back-bar"><button class="back-btn" onclick="nav(\'home\')">← Back</button></div>';
+  h+='<div class="content">';
+  h+='<div class="hdr" style="padding:18px 16px 8px"><h1 style="font-size:18px">STATISTICS</h1><div class="subtitle">Patterns across your sessions.</div></div>';
+
+  if(s.totalSessions===0){
+    h+='<div class="empty-state">No sessions logged yet.<br>Import a session or add a manual entry to see statistics here.</div></div>';
+    return h;
+  }
+
+  // ── Overview ──
+  h+='<div class="stat-card"><h3>Overview</h3>';
+  h+='<div class="stat-line"><span>Total sessions</span><span class="sv">'+s.totalSessions+'</span></div>';
+  h+='<div class="stat-line"><span>Sessions with coherence data</span><span class="sv">'+s.sessionsWithCoherence+'</span></div>';
+  if(s.firstDate&&s.lastDate){
+    const rangeStr=s.firstDate===s.lastDate?fmtDate(s.firstDate):(fmtDate(s.firstDate)+' – '+fmtDate(s.lastDate));
+    h+='<div class="stat-line"><span>Date range</span><span class="sv">'+rangeStr+(s.daySpan>0?' ('+s.daySpan+' day'+(s.daySpan!==1?'s':'')+')':'')+'</span></div>';
+  }
+  h+='</div>';
+
+  // ── Coherence ──
+  h+='<div class="stat-card"><h3>Coherence</h3>';
+  if(s.sessionsWithCoherence===0){
+    h+='<div class="empty-state" style="padding:16px;font-size:12px">No coherence data yet. Add a Coherence Score in any session\'s context to see this chart.</div>';
+  } else {
+    h+='<div class="stat-line"><span>Average</span><span class="sv">'+s.cohAvg+'</span></div>';
+    if(s.cohPeak!=null){
+      const peakDate=s.cohPeakRec?fmtDate(s.cohPeakRec.session_date):'';
+      h+='<div class="stat-line"><span>Peak</span><span class="sv">'+s.cohPeak+(peakDate?' ('+peakDate+')':'')+'</span></div>';
+    }
+    if(s.trend){
+      const cls=s.trend.delta>0?'trend-up':s.trend.delta<0?'trend-down':'trend-flat';
+      const arrow=s.trend.delta>0?'↗':s.trend.delta<0?'↘':'→';
+      const sign=s.trend.delta>0?'+':'';
+      h+='<div class="stat-line"><span>Trend (first third → last third)</span><span class="'+cls+'" style="font-family:JetBrains Mono,monospace">'+arrow+' '+sign+s.trend.delta+' ('+s.trend.first+' → '+s.trend.last+')</span></div>';
+    }
+    h+='<div class="chart-wrap">'+renderCoherenceChart(s.cohSeries)+'</div>';
+    // Legend
+    const seen={};s.cohSeries.forEach(p=>{seen[p.classification||'']=true;});
+    const order=['Aetheria Tuned','Harmonically Aligned','Partially Aligned','Unstructured',''];
+    const items=order.filter(k=>seen[k]);
+    if(items.length){
+      h+='<div class="chart-legend">';
+      items.forEach(k=>{
+        const label=k||'Unclassified';
+        h+='<span><span class="ld" style="background:'+CLASS_COLOR[k]+'"></span>'+label+'</span>';
+      });
+      h+='</div>';
+    }
+  }
+  h+='</div>';
+
+  // ── Walk distribution ──
+  h+='<div class="stat-card"><h3>Walk Distribution</h3>';
+  if(s.mostUsedWalk){
+    h+='<div class="stat-line"><span>Most used</span><span class="sv">'+escHtml(s.mostUsedWalk.name)+' ('+s.mostUsedWalk.count+'×)</span></div>';
+  }
+  const maxCount=Math.max.apply(null,s.walkRows.map(r=>r.count));
+  s.walkRows.forEach(r=>{
+    const pct=Math.round((r.count/maxCount)*100);
+    h+='<div class="stat-bar-row">';
+    h+='<span class="stat-bar-label">'+escHtml(r.name)+'</span>';
+    h+='<span class="stat-bar-track"><span class="stat-bar-fill" style="width:'+pct+'%"></span></span>';
+    h+='<span class="stat-bar-count">'+r.count+'×</span>';
+    h+='</div>';
+  });
+  h+='</div>';
+
+  // ── Duration by Regime ──
+  const anyRegimeData=s.regimeStats.some(r=>r.count>0);
+  if(anyRegimeData){
+    h+='<div class="stat-card"><h3>Duration by Regime</h3>';
+    s.regimeStats.forEach(r=>{
+      if(r.count===0) return;
+      const proto=IntervalAnalysis.DURATION_PROTOCOL[r.regime];
+      let metStr='';
+      if(proto&&r.avg!=null){
+        const met=r.avg>=proto.min&&r.avg<=proto.max;
+        metStr=' <span style="color:'+(met?'var(--grn)':'var(--ora)')+';font-size:9px;letter-spacing:.05em">'+(met?'✓ within '+proto.min+'–'+proto.max:'⚠ target '+proto.min+'–'+proto.max)+' min</span>';
+      }
+      h+='<div class="stat-line"><span>'+r.regime+' <span style="color:var(--dim);font-size:10px">('+r.count+' session'+(r.count!==1?'s':'')+')</span></span><span class="sv">'+r.avg+' min'+metStr+'</span></div>';
+    });
+    h+='</div>';
+  }
+
+  h+='</div>';
+  return h;
+}
+
 // ─── Form field helpers ───
 function fieldDate(id,val){return '<div class="field-group"><div class="field-label">Date</div><input type="date" id="'+id+'" value="'+escHtml(val)+'"></div>';}
 function fieldText(label,id,val,ph){return '<div class="field-group"><div class="field-label">'+label+'</div><input type="text" id="'+id+'" value="'+escHtml(val)+'" placeholder="'+escHtml(ph)+'"></div>';}
 function fieldNumber(label,id,val,ph){return '<div class="field-group"><div class="field-label">'+label+'</div><input type="number" id="'+id+'" value="'+(val!=null?val:'')+'" placeholder="'+escHtml(ph)+'" step="0.5" min="0" max="24"></div>';}
-function fieldSelect(label,id,val,opts){let h='<div class="field-group"><div class="field-label">'+label+'</div><select id="'+id+'">';opts.forEach(function(o){h+='<option value="'+escHtml(o.v)+'"'+(val===o.v?' selected':'')+'>'+escHtml(o.l)+'</option>';});h+='</select></div>';return h;}
+function fieldSelect(label,id,val,opts,onchange){const oc=onchange?' onchange="'+onchange+'"':'';let h='<div class="field-group"><div class="field-label">'+label+'</div><select id="'+id+'"'+oc+'>';opts.forEach(function(o){h+='<option value="'+escHtml(o.v)+'"'+(val===o.v?' selected':'')+'>'+escHtml(o.l)+'</option>';});h+='</select></div>';return h;}
+function fieldNumberGeneric(label,id,val,ph,min,max,step,oninput){const oi=oninput?' oninput="'+oninput+'"':'';return '<div class="field-group"><div class="field-label">'+label+'</div><input type="number" id="'+id+'" value="'+(val!=null?val:'')+'" placeholder="'+escHtml(ph)+'" step="'+step+'" min="'+min+'" max="'+max+'"'+oi+'></div>';}
 function fieldRange(label,id,val,min,max){const v=val!=null?val:min;return '<div class="field-group"><div class="field-label"><span>'+label+'</span><span class="fval" id="'+id+'_val">'+v+'</span></div><input type="range" id="'+id+'" min="'+min+'" max="'+max+'" value="'+v+'" oninput="document.getElementById(\''+id+'_val\').textContent=this.value"></div>';}
 function fieldTextarea(label,id,val,ph){return '<div class="field-group"><div class="field-label">'+label+'</div><textarea id="'+id+'" placeholder="'+escHtml(ph)+'">'+escHtml(val)+'</textarea></div>';}
 function metricRow(label,val){return '<div class="metric-row"><span>'+label+'</span><span class="mv">'+(val!=null?val:'\u2014')+'</span></div>';}
@@ -1010,7 +1382,12 @@ window.saveDetail=function(sessionId){
     mood_change:null,
     pain:gi('ctx_pain'),
     activity:gv('ctx_activity')||'',
-    notes:gv('ctx_notes')||''
+    notes:gv('ctx_notes')||'',
+    walk_type:gv('ctx_walk_type')||'',
+    dominant_regime:gv('ctx_dominant_regime')||'',
+    duration_minutes:gn('ctx_duration_minutes'),
+    coherence_score:gn('ctx_coherence_score'),
+    classification:gv('ctx_classification')||''
   };
   if(typeof rec.context.mood_before==='number'&&typeof rec.context.mood_after==='number'){
     rec.context.mood_change=rec.context.mood_after-rec.context.mood_before;
@@ -1062,7 +1439,12 @@ window.saveManual=function(){
       mood_change:(typeof mb==='number'&&typeof ma==='number')?ma-mb:null,
       pain:gi('ctx_pain'),
       activity:gv('ctx_activity')||'',
-      notes:gv('ctx_notes')||''
+      notes:gv('ctx_notes')||'',
+      walk_type:gv('ctx_walk_type')||'',
+      dominant_regime:gv('ctx_dominant_regime')||'',
+      duration_minutes:gn('ctx_duration_minutes'),
+      coherence_score:gn('ctx_coherence_score'),
+      classification:gv('ctx_classification')||''
     },
     source_data:{description:gv('manual_desc')||''},
     raw_import:null
@@ -1082,6 +1464,7 @@ function nav(view,param){
   if(view==='detail'&&param) location.hash='#session/'+param;
   else if(view==='new-manual') location.hash='#new-manual';
   else if(view==='links') location.hash='#links';
+  else if(view==='stats') location.hash='#stats';
   else location.hash='#home';
 }
 
@@ -1093,6 +1476,8 @@ function parseHash(){
     state.view='new-manual';state.currentSessionId=null;
   } else if(h==='#links'){
     state.view='links';state.currentSessionId=null;
+  } else if(h==='#stats'){
+    state.view='stats';state.currentSessionId=null;
   } else {
     state.view='home';state.currentSessionId=null;
   }

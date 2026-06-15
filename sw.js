@@ -1,4 +1,4 @@
-const CACHE = 'aetheria-tagger-v13';
+const CACHE = 'aetheria-tagger-v14';
 const SHELL = [
   './',
   './index.html',

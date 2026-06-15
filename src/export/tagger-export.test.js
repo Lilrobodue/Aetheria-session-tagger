@@ -115,7 +115,7 @@ describe('exportCoherenceLabCSV', function () {
     var csv = TaggerExport.exportCoherenceLabCSV([makeLabRecord()]);
     var header = csv.split('\n')[0];
     var cols = header.split(',');
-    assertEqual(cols.length, 30, 'header columns');
+    assertEqual(cols.length, 35, 'header columns');
     assert(cols[0] === 'session_id');
     assert(cols[cols.length - 1] === 'signal_quality');
   });
@@ -148,7 +148,7 @@ describe('exportSophiaCSV', function () {
   it('should produce correct header count', function () {
     var csv = TaggerExport.exportSophiaCSV([makeSophiaRecord()]);
     var cols = csv.split('\n')[0].split(',');
-    assertEqual(cols.length, 22, 'header columns');
+    assertEqual(cols.length, 27, 'header columns');
   });
 
   it('should include sophia-specific fields', function () {
@@ -199,7 +199,7 @@ describe('exportManualCSV', function () {
   it('should produce correct header count', function () {
     var csv = TaggerExport.exportManualCSV([makeManualRecord()]);
     var cols = csv.split('\n')[0].split(',');
-    assertEqual(cols.length, 13, 'header columns');
+    assertEqual(cols.length, 18, 'header columns');
     assert(cols[cols.length - 1] === 'description');
   });
 
@@ -217,7 +217,7 @@ describe('exportUnifiedCSV', function () {
     var all = [makeLabRecord(), makeSophiaRecord(), makeManualRecord()];
     var csv = TaggerExport.exportUnifiedCSV(all);
     var cols = csv.split('\n')[0].split(',');
-    assertEqual(cols.length, 58, 'header columns');
+    assertEqual(cols.length, 63, 'header columns');
   });
 
   it('should produce one row per session regardless of source', function () {
