@@ -148,7 +148,7 @@ describe('exportSophiaCSV', function () {
   it('should produce correct header count', function () {
     var csv = TaggerExport.exportSophiaCSV([makeSophiaRecord()]);
     var cols = csv.split('\n')[0].split(',');
-    assertEqual(cols.length, 27, 'header columns');
+    assertEqual(cols.length, 34, 'header columns'); // +7 spiral summary cols
   });
 
   it('should include sophia-specific fields', function () {
@@ -183,7 +183,7 @@ describe('exportSophiaSnapshotsCSV', function () {
   it('should produce correct header count', function () {
     var csv = TaggerExport.exportSophiaSnapshotsCSV([makeSophiaRecord()]);
     var cols = csv.split('\n')[0].split(',');
-    assertEqual(cols.length, 21, 'header columns');
+    assertEqual(cols.length, 62, 'header columns'); // +17 spiral + 24 PLV matrix cols
   });
 
   it('should include band powers as decimals', function () {
@@ -217,7 +217,7 @@ describe('exportUnifiedCSV', function () {
     var all = [makeLabRecord(), makeSophiaRecord(), makeManualRecord()];
     var csv = TaggerExport.exportUnifiedCSV(all);
     var cols = csv.split('\n')[0].split(',');
-    assertEqual(cols.length, 63, 'header columns');
+    assertEqual(cols.length, 70, 'header columns'); // +7 sophia spiral summary cols
   });
 
   it('should produce one row per session regardless of source', function () {

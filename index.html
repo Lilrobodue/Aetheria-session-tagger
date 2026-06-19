@@ -141,6 +141,34 @@ input[type=range]{width:100%;accent-color:var(--gld)}
 .snap-bands{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
 .snap-bands span{font-family:'JetBrains Mono',monospace}
 
+/* ─── Actionable insights ─── */
+.insight{display:flex;gap:8px;align-items:flex-start;font-size:11px;line-height:1.45;color:var(--sub);padding:7px 10px;margin-bottom:5px;border-radius:6px;background:var(--bg3);border-left:2px solid var(--bdr)}
+.insight .ic{flex-shrink:0;font-size:11px;line-height:1.45;width:12px;text-align:center}
+.insight.good{border-left-color:var(--grn)}.insight.good .ic{color:var(--grn)}
+.insight.watch{border-left-color:var(--ora)}.insight.watch .ic{color:var(--ora)}
+.insight.tip{border-left-color:var(--gld)}.insight.tip .ic{color:var(--gld)}
+
+/* ─── Spiral wave visuals ─── */
+.spiral-viz{margin:6px 0 4px}
+.plv-grid{display:grid;grid-template-columns:auto repeat(4,1fr);gap:2px;font-family:'JetBrains Mono',monospace;font-size:8px}
+.plv-grid .plv-bh{color:var(--mut);text-align:center;padding:2px 0;letter-spacing:.04em}
+.plv-grid .plv-rl{color:var(--sub);padding:0 6px 0 0;display:flex;align-items:center;white-space:nowrap;font-size:8px}
+.plv-cell{position:relative;height:20px;border-radius:3px;background:var(--bg);display:flex;align-items:center;justify-content:center;color:#cfe7d8;font-size:8px;border:1px solid var(--bdr)}
+.plv-cap{font-size:8px;color:var(--dim);margin-top:3px;display:flex;justify-content:space-between}
+.wave-dir{display:flex;gap:8px;margin:4px 0}
+.wave-path{flex:1;background:var(--bg3);border:1px solid var(--bdr);border-radius:6px;padding:7px 9px;font-size:10px}
+.wave-path .wp-lbl{color:var(--mut);letter-spacing:.08em;text-transform:uppercase;font-size:8px;margin-bottom:3px}
+.wave-path .wp-flow{font-family:'JetBrains Mono',monospace;font-size:12px;display:flex;align-items:center;gap:5px}
+.wave-path .wp-arrow{letter-spacing:1px}
+.wave-path .wp-meta{font-size:8px;color:var(--dim);margin-top:3px}
+.hcr-gauge{display:flex;flex-direction:column;gap:4px;margin:4px 0}
+.hcr-bar{display:flex;align-items:center;gap:7px;font-size:9px}
+.hcr-bar .hb-lbl{width:38px;color:var(--sub);font-family:'JetBrains Mono',monospace;text-transform:uppercase;font-size:8px}
+.hcr-bar .hb-track{flex:1;height:9px;background:var(--bg);border-radius:5px;position:relative;overflow:hidden;border:1px solid var(--bdr)}
+.hcr-bar .hb-mid{position:absolute;left:33.3%;top:0;bottom:0;width:1px;background:var(--mut);opacity:.6}
+.hcr-bar .hb-fill{height:100%;border-radius:5px}
+.hcr-bar .hb-val{width:54px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:9px}
+
 /* ─── Import dialogs ─── */
 .import-summary{background:var(--bg2);border:1px solid var(--grn);border-radius:8px;padding:14px;margin-top:10px;text-align:center}
 .import-summary h3{font-size:13px;color:var(--grn);margin-bottom:6px;font-weight:500}
@@ -579,6 +607,100 @@ function renderSourceLab(rec){
   return h;
 }
 
+// ─── Spiral wave visualizations ───
+var PLV_PAIRS_UI=[
+  {key:'AF7_AF8', label:'AF7-AF8'},
+  {key:'TP9_TP10',label:'TP9-TP10'},
+  {key:'AF7_TP9', label:'AF7-TP9'},
+  {key:'AF8_TP10',label:'AF8-TP10'},
+  {key:'AF7_TP10',label:'AF7-TP10'},
+  {key:'AF8_TP9', label:'AF8-TP9'}
+];
+var SPIRAL_BANDS_UI=['theta','alpha','beta','gamma'];
+
+function plvColor(v){
+  if(v==null)return 'var(--bg)';
+  var a=Math.max(0,Math.min(1,v));
+  return 'rgba(74,124,89,'+(0.10+a*0.90).toFixed(3)+')'; // muted green, dark→bright by magnitude
+}
+
+function renderPlvHeatmap(plv,opts){
+  opts=opts||{};
+  if(!plv)return '';
+  var h='<div class="spiral-viz"><div class="plv-grid"><div></div>';
+  SPIRAL_BANDS_UI.forEach(function(b){h+='<div class="plv-bh">'+b[0].toUpperCase()+'</div>';});
+  PLV_PAIRS_UI.forEach(function(p){
+    var cell=plv[p.key]||{};
+    h+='<div class="plv-rl">'+p.label+'</div>';
+    SPIRAL_BANDS_UI.forEach(function(b){
+      var v=cell[b];
+      var txt=(opts.values&&v!=null)?String(Math.round(v*100)):'';
+      h+='<div class="plv-cell" style="background:'+plvColor(v)+'" title="'+p.label+' '+b+': '+(v!=null?v:'—')+'">'+txt+'</div>';
+    });
+  });
+  h+='</div><div class="plv-cap"><span>Phase-locking'+(opts.label?' · '+opts.label:'')+'</span><span>0 → 100</span></div></div>';
+  return h;
+}
+
+function dirColor(dir){
+  if(dir==='front-to-back')return 'var(--gld)';
+  if(dir==='back-to-front')return 'var(--grn)';
+  return 'var(--dim)';
+}
+
+function renderWavePath(label,front,back,pw){
+  pw=pw||{};
+  var dir=pw.direction||'indeterminate';
+  var str=pw.strength!=null?pw.strength:0;
+  var op=(0.35+Math.min(1,str)*0.65).toFixed(2);
+  var arrow=dir==='front-to-back'?'→→':dir==='back-to-front'?'←←':'··';
+  var h='<div class="wave-path"><div class="wp-lbl">'+label+'</div>';
+  h+='<div class="wp-flow" style="color:'+dirColor(dir)+';opacity:'+op+'"><span>'+front+'</span><span class="wp-arrow">'+arrow+'</span><span>'+back+'</span></div>';
+  h+='<div class="wp-meta">'+dir+(pw.strength!=null?' · strength '+pw.strength:'')+'</div></div>';
+  return h;
+}
+
+function renderWaveDirection(spi){
+  var h='<div class="wave-dir">';
+  h+=renderWavePath('Left pathway', 'AF7','TP9', spi.left_pathway);
+  h+=renderWavePath('Right pathway','AF8','TP10',spi.right_pathway);
+  h+='</div>';
+  return h;
+}
+
+function hcrColor(v){
+  if(v==null)return 'var(--dim)';
+  if(v>1.2)return 'var(--gld)';
+  if(v<0.8)return 'var(--red)';
+  return 'var(--grn)';
+}
+
+function renderHcrGauge(mh){
+  if(!mh)return '';
+  var h='<div class="hcr-gauge">';
+  SPIRAL_BANDS_UI.forEach(function(b){
+    var v=mh[b];
+    var pct=v!=null?Math.max(2,Math.min(100,v/3*100)):0; // scale 0..3 → 0..100%, midline (1.0) at 33%
+    var tag=v==null?'':v>1.2?'hemispheric':v<0.8?'ipsilateral':'balanced';
+    h+='<div class="hcr-bar"><span class="hb-lbl">'+b+'</span>';
+    h+='<span class="hb-track"><span class="hb-mid"></span><span class="hb-fill" style="width:'+pct+'%;background:'+hcrColor(v)+'"></span></span>';
+    h+='<span class="hb-val" style="color:'+hcrColor(v)+'">'+(v!=null?v:'—')+'</span></div>';
+  });
+  h+='<div class="plv-cap"><span>Hemispheric coherence ratio</span><span>‹ ipsi · 1.0 · hemi ›</span></div></div>';
+  return h;
+}
+
+function renderInsights(insights){
+  if(!insights||!insights.length)return '';
+  var icons={good:'✓',watch:'!',tip:'→'};
+  var h='';
+  insights.forEach(function(ins){
+    var k=ins.kind||'tip';
+    h+='<div class="insight '+k+'"><span class="ic">'+(icons[k]||'·')+'</span><span>'+ins.text+'</span></div>';
+  });
+  return h;
+}
+
 function renderSourceSophia(rec){
   const sd=rec.source_data||{};
   const sum=sd.summary||{};
@@ -610,6 +732,21 @@ function renderSourceSophia(rec){
   h+=metricRow('Mean Focus',sum.mean_focus!=null?sum.mean_focus+'%':null);
   h+=metricRow('Mean Meditation',sum.mean_meditation!=null?sum.mean_meditation+'%':null);
   h+='</div>';
+
+  // Actionable insights (v2 exports)
+  if(sum.insights&&sum.insights.length){
+    h+='<div class="section-title">Insights</div>';
+    h+=renderInsights(sum.insights);
+  }
+
+  // Spiral-wave visuals (v2 exports)
+  if(sum.spiral){
+    const sp=sum.spiral;
+    h+='<div class="section-title">Spiral Waves'+(sp.samples?' · '+sp.samples+' epochs':'')+'</div>';
+    h+=renderPlvHeatmap(sp.mean_plv_matrix,{label:'session mean',values:true});
+    h+=renderWaveDirection(sp);
+    h+=renderHcrGauge(sp.mean_hcr);
+  }
 
   // Snapshots (expandable)
   if(snaps.length){
@@ -654,6 +791,17 @@ function renderSourceSophia(rec){
           ['LI','RI','LO','RO'].forEach(function(ch){
             if(s.fnirs[ch])h+=ch+' SQI:'+((s.fnirs[ch].sqi||0)*100).toFixed(0)+'% ';
           });
+          h+='</div>';
+        }
+        if(s.spiral){
+          const sp=s.spiral;const plb=sp.phase_lag_bilateral||{};const hcr=sp.hcr||{};
+          h+=renderPlvHeatmap(sp.plv_matrix,{label:'this epoch',values:false});
+          h+='<div style="margin-top:4px;font-size:9px;color:var(--dim)">Spiral: ';
+          if(plb.direction)h+='wave '+plb.direction+(plb.symmetry!=null?' (sym '+plb.symmetry+')':'')+' ';
+          const hcrParts=['theta','alpha','beta','gamma'].map(function(b){
+            return (hcr[b]&&hcr[b].hcr!=null)?'HCR-'+b[0].toUpperCase()+' '+hcr[b].hcr:null;
+          }).filter(Boolean);
+          if(hcrParts.length)h+='· '+hcrParts.join(' ');
           h+='</div>';
         }
         h+='</div>';

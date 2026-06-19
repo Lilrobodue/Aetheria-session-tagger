@@ -137,6 +137,43 @@ function makeMultiSnapshotExport() {
   });
 }
 
+function makeSpiralEntry(t, overrides) {
+  var entry = {
+    t: t, pos: 1, freq: 174, regime: 'GUT', geo: 'Seed of Life',
+    state: 'SCATTERED FIELD', keyword: 'Foundation', hex: 8, hexName: 'Holding Together',
+    coherence: 6, focus: 68, meditation: 33,
+    delta: 60, theta: 13, alpha: 4, beta: 10, gamma: 14,
+    spiral: {
+      plv_matrix: {
+        AF7_AF8:  { theta: 0.42, alpha: 0.36, beta: 0.32, gamma: 0.21 },
+        TP9_TP10: { theta: 0.93, alpha: 0.04, beta: 0.24, gamma: 0.18 },
+        AF7_TP9:  { theta: 0.35, alpha: 0.20, beta: 0.15, gamma: 0.20 },
+        AF8_TP10: { theta: 0.33, alpha: 0.35, beta: 0.18, gamma: 0.06 },
+        AF7_TP10: { theta: 0.32, alpha: 0.21, beta: 0.37, gamma: 0.36 },
+        AF8_TP9:  { theta: 0.22, alpha: 0.41, beta: 0.30, gamma: 0.15 }
+      },
+      phase_lag_left:      { lagMs: 3.65, direction: 'front-to-back', strength: 0.20, band: 'alpha' },
+      phase_lag_right:     { lagMs: 2.83, direction: 'front-to-back', strength: 0.35, band: 'alpha' },
+      phase_lag_bilateral: { lagMs: 3.24, direction: 'front-to-back', symmetry: 1 },
+      hcr: {
+        theta: { interHemi: 0.67, ipsi: 0.34, hcr: 1.98, interp: 'hemispheric-dominant' },
+        alpha: { interHemi: 0.20, ipsi: 0.27, hcr: 0.75, interp: 'ipsilateral-dominant' },
+        beta:  { interHemi: 0.28, ipsi: 0.16, hcr: 1.71, interp: 'hemispheric-dominant' },
+        gamma: { interHemi: 0.19, ipsi: 0.13, hcr: 1.51, interp: 'hemispheric-dominant' }
+      },
+      dominant_band: 'theta'
+    },
+    artifact: { movementScore: 0.001, deltaHigh: false, deltaArtifactLikely: false, source: 'eeg-mad' },
+    heartRate: 88
+  };
+  if (overrides) {
+    for (var k in overrides) {
+      if (overrides.hasOwnProperty(k)) entry[k] = overrides[k];
+    }
+  }
+  return entry;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // TESTS
 // ═══════════════════════════════════════════════════════════════
@@ -531,6 +568,194 @@ describe('UI helpers', function () {
     assert(label.indexOf('1 snapshot') !== -1);
     assert(label.indexOf('GUT') !== -1);
     assert(label.indexOf('Seed of Life') !== -1);
+  });
+});
+
+describe('spiral metrics (v2 exports)', function () {
+
+  it('convertSnapshot should pass through spiral and artifact blocks', function () {
+    var snap = SophiaImport.convertSnapshot(makeSpiralEntry('2026-06-19T10:00:11.987Z'));
+    assert(snap.spiral, 'spiral present');
+    assertEqual(snap.spiral.dominant_band, 'theta');
+    assertEqual(snap.spiral.plv_matrix.TP9_TP10.theta, 0.93);
+    assertEqual(snap.spiral.hcr.gamma.hcr, 1.51);
+    assertEqual(snap.spiral.phase_lag_bilateral.direction, 'front-to-back');
+    assert(snap.artifact, 'artifact present');
+    assertEqual(snap.artifact.movementScore, 0.001);
+  });
+
+  it('convertSnapshot should null spiral/artifact for pre-v2 entries', function () {
+    var snap = SophiaImport.convertSnapshot(makeSophiaExport().timeline[0]);
+    assertEqual(snap.spiral, null);
+    assertEqual(snap.artifact, null);
+  });
+
+  it('computeSophiaSummary should aggregate spiral metrics', function () {
+    var snaps = [
+      SophiaImport.convertSnapshot(makeSpiralEntry('2026-06-19T10:00:11.987Z')),
+      SophiaImport.convertSnapshot(makeSpiralEntry('2026-06-19T10:00:41.987Z', {
+        spiral: {
+          plv_matrix: {},
+          phase_lag_bilateral: { lagMs: -5.3, direction: 'back-to-front', symmetry: 0.94 },
+          hcr: {
+            theta: { hcr: 1.02 }, alpha: { hcr: 1.25 },
+            beta: { hcr: 0.95 }, gamma: { hcr: 0.78 }
+          },
+          dominant_band: 'theta'
+        }
+      })),
+      SophiaImport.convertSnapshot(makeSpiralEntry('2026-06-19T10:01:11.987Z', {
+        spiral: {
+          plv_matrix: {},
+          phase_lag_bilateral: { lagMs: 0.75, direction: 'front-to-back', symmetry: 0.5 },
+          hcr: {
+            theta: { hcr: 1.00 }, alpha: { hcr: 1.00 },
+            beta: { hcr: 1.00 }, gamma: { hcr: 1.00 }
+          },
+          dominant_band: 'theta'
+        }
+      }))
+    ];
+    var sum = SophiaImport.computeSophiaSummary(snaps);
+    assert(sum.spiral, 'spiral summary present');
+    assertEqual(sum.spiral.samples, 3);
+    // theta HCR mean: (1.98 + 1.02 + 1.00) / 3 = 1.3333 → 1.33
+    assertEqual(sum.spiral.mean_hcr.theta, 1.33);
+    // front-to-back appears 2x, back-to-front 1x → dominant front-to-back
+    assertEqual(sum.spiral.dominant_dir, 'front-to-back');
+    assertEqual(sum.spiral.phase_lag_dir_counts['front-to-back'], 2);
+    assertEqual(sum.spiral.phase_lag_dir_counts['back-to-front'], 1);
+    // symmetry mean: (1 + 0.94 + 0.5) / 3 = 0.8133 → 0.81
+    assertEqual(sum.spiral.mean_symmetry, 0.81);
+  });
+
+  it('computeSophiaSummary should return null spiral when no snapshot has spiral', function () {
+    var snaps = [SophiaImport.convertSnapshot(makeSophiaExport().timeline[0])];
+    var sum = SophiaImport.computeSophiaSummary(snaps);
+    assertEqual(sum.spiral, null);
+  });
+
+  it('buildNewSophiaRecord should carry spiral through to stored snapshots and summary', function () {
+    freshEnv();
+    var exp = makeSophiaExport({ timeline: [makeSpiralEntry('2026-06-19T10:00:11.987Z')] });
+    var rec = SophiaImport.buildNewSophiaRecord(exp);
+    assert(rec.source_data.snapshots[0].spiral, 'snapshot retains spiral');
+    assert(rec.source_data.summary.spiral, 'summary has spiral block');
+    assertEqual(rec.source_data.summary.spiral.dominant_dir, 'front-to-back');
+    var v = TaggerStore.validateRecord(rec);
+    assertEqual(v.valid, true, 'should be valid: ' + v.errors.join(', '));
+  });
+});
+
+describe('spiral summary visuals data', function () {
+
+  it('should compute a session-mean PLV matrix', function () {
+    var snaps = [
+      SophiaImport.convertSnapshot(makeSpiralEntry('2026-06-19T10:00:11.987Z')),
+      SophiaImport.convertSnapshot(makeSpiralEntry('2026-06-19T10:00:41.987Z', {
+        spiral: {
+          plv_matrix: { AF7_AF8: { theta: 0.22, alpha: 0.46, beta: 0.12, gamma: 0.01 } },
+          phase_lag_bilateral: { direction: 'front-to-back', symmetry: 0.8 },
+          hcr: {}, dominant_band: 'theta'
+        }
+      }))
+    ];
+    var sum = SophiaImport.computeSophiaSummary(snaps);
+    // AF7_AF8 theta: (0.42 + 0.22) / 2 = 0.32
+    assertEqual(sum.spiral.mean_plv_matrix.AF7_AF8.theta, 0.32);
+    // TP9_TP10 theta only present in first snapshot (0.93) → mean 0.93
+    assertEqual(sum.spiral.mean_plv_matrix.TP9_TP10.theta, 0.93);
+  });
+
+  it('should summarize left/right pathway direction and strength', function () {
+    var snaps = [
+      SophiaImport.convertSnapshot(makeSpiralEntry('2026-06-19T10:00:11.987Z')),
+      SophiaImport.convertSnapshot(makeSpiralEntry('2026-06-19T10:00:41.987Z'))
+    ];
+    var sum = SophiaImport.computeSophiaSummary(snaps);
+    assertEqual(sum.spiral.left_pathway.direction, 'front-to-back');
+    assertEqual(sum.spiral.left_pathway.strength, 0.2);   // mean of two 0.20s
+    assertEqual(sum.spiral.right_pathway.direction, 'front-to-back');
+    assertEqual(sum.spiral.right_pathway.strength, 0.35);
+  });
+});
+
+describe('actionable insights', function () {
+
+  it('should generate insights array on the summary', function () {
+    var rec = SophiaImport.buildNewSophiaRecord(
+      makeSophiaExport({ timeline: [makeSpiralEntry('2026-06-19T10:00:11.987Z')] })
+    );
+    var ins = rec.source_data.summary.insights;
+    assert(Array.isArray(ins) && ins.length > 0, 'insights present');
+    ins.forEach(function (x) {
+      assert(typeof x.text === 'string' && x.text.length > 0, 'has text');
+      assert(['good', 'watch', 'tip'].indexOf(x.kind) !== -1, 'valid kind: ' + x.kind);
+    });
+  });
+
+  it('should flag low coherence as a watch insight', function () {
+    // makeSpiralEntry has coherence 6 → low
+    var snap = SophiaImport.convertSnapshot(makeSpiralEntry('2026-06-19T10:00:11.987Z'));
+    var sum = SophiaImport.computeSophiaSummary([snap]);
+    var hasLow = sum.insights.some(function (x) {
+      return x.kind === 'watch' && /coherence/i.test(x.text);
+    });
+    assert(hasLow, 'should warn about low coherence');
+  });
+
+  it('should detect a rising coherence trend', function () {
+    var snaps = [
+      SophiaImport.convertSnapshot(makeSpiralEntry('2026-06-19T10:00:11.987Z', { coherence: 8 })),
+      SophiaImport.convertSnapshot(makeSpiralEntry('2026-06-19T10:00:41.987Z', { coherence: 40 }))
+    ];
+    var sum = SophiaImport.computeSophiaSummary(snaps);
+    var hasRise = sum.insights.some(function (x) { return /rose from 8% to 40%/.test(x.text); });
+    assert(hasRise, 'should detect rising trend');
+  });
+
+  it('should call out clean data when artifact is low', function () {
+    var snap = SophiaImport.convertSnapshot(makeSpiralEntry('2026-06-19T10:00:11.987Z'));
+    var sum = SophiaImport.computeSophiaSummary([snap]);
+    var clean = sum.insights.some(function (x) { return x.kind === 'good' && /clean data/i.test(x.text); });
+    assert(clean, 'should note clean data');
+  });
+
+  it('should produce no insights array crash on pre-v2 data', function () {
+    var sum = SophiaImport.computeSophiaSummary([
+      SophiaImport.convertSnapshot(makeSophiaExport().timeline[0])
+    ]);
+    assert(Array.isArray(sum.insights), 'insights still an array without spiral');
+  });
+});
+
+describe('spiral export', function () {
+
+  it('exportSophiaSnapshotsCSV should include PLV matrix and HCR columns', function () {
+    var TaggerExport = require('../export/tagger-export');
+    var rec = SophiaImport.buildNewSophiaRecord(
+      makeSophiaExport({ timeline: [makeSpiralEntry('2026-06-19T10:00:11.987Z')] })
+    );
+    var csv = TaggerExport.exportSophiaSnapshotsCSV([rec]);
+    var lines = csv.split('\n');
+    assert(lines[0].indexOf('plv_TP9_TP10_theta') !== -1, 'header has plv column');
+    assert(lines[0].indexOf('hcr_gamma') !== -1, 'header has hcr column');
+    assert(lines[0].indexOf('pl_bilateral_direction') !== -1, 'header has phase lag column');
+    // Data row should contain the TP9_TP10 theta value 0.93 and bilateral direction
+    assert(lines[1].indexOf('0.93') !== -1, 'data row has plv value');
+    assert(lines[1].indexOf('front-to-back') !== -1, 'data row has direction');
+  });
+
+  it('exportSophiaCSV should include aggregate spiral columns', function () {
+    var TaggerExport = require('../export/tagger-export');
+    var rec = SophiaImport.buildNewSophiaRecord(
+      makeSophiaExport({ timeline: [makeSpiralEntry('2026-06-19T10:00:11.987Z')] })
+    );
+    var csv = TaggerExport.exportSophiaCSV([rec]);
+    var lines = csv.split('\n');
+    assert(lines[0].indexOf('spiral_mean_hcr_theta') !== -1, 'header has spiral summary col');
+    assert(lines[0].indexOf('spiral_dominant_dir') !== -1, 'header has dominant dir col');
+    assert(lines[1].indexOf('front-to-back') !== -1, 'data row has dominant dir');
   });
 });
 

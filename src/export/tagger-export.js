@@ -113,8 +113,21 @@
   ].concat(CTX_HEADERS).concat([
     'device', 'device_type', 'snapshot_count',
     'dominant_regime', 'dominant_geometry', 'hexagrams',
-    'mean_coherence', 'peak_coherence', 'mean_focus', 'mean_meditation'
+    'mean_coherence', 'peak_coherence', 'mean_focus', 'mean_meditation',
+    'spiral_mean_hcr_theta', 'spiral_mean_hcr_alpha',
+    'spiral_mean_hcr_beta', 'spiral_mean_hcr_gamma',
+    'spiral_dominant_dir', 'spiral_mean_symmetry', 'spiral_samples'
   ]);
+
+  // Flatten a summary.spiral block into CSV cell values (7 columns).
+  function _spiralSummaryRow(sum) {
+    var spi = (sum && sum.spiral) || {};
+    var mh = spi.mean_hcr || {};
+    return [
+      mh.theta, mh.alpha, mh.beta, mh.gamma,
+      spi.dominant_dir, spi.mean_symmetry, spi.samples
+    ];
+  }
 
   function exportSophiaCSV(sessions) {
     var rows = [];
@@ -130,12 +143,24 @@
         sum.hexagrams_encountered,
         sum.mean_coherence, sum.peak_coherence,
         sum.mean_focus, sum.mean_meditation
-      ]));
+      ]).concat(_spiralSummaryRow(sum)));
     }
     return _buildCsv(SOPHIA_HEADERS, rows);
   }
 
   // ─── Sophia Snapshots CSV (long format) ───────────────────────
+
+  // Spiral-wave detection (v2 exports): 6 channel pairs × 4 bands.
+  var PLV_PAIRS = ['AF7_AF8', 'TP9_TP10', 'AF7_TP9', 'AF8_TP10', 'AF7_TP10', 'AF8_TP9'];
+  var SPIRAL_BANDS = ['theta', 'alpha', 'beta', 'gamma'];
+
+  // plv_<pair>_<band> headers, e.g. plv_AF7_AF8_theta
+  var PLV_HEADERS = [];
+  for (var _p = 0; _p < PLV_PAIRS.length; _p++) {
+    for (var _b = 0; _b < SPIRAL_BANDS.length; _b++) {
+      PLV_HEADERS.push('plv_' + PLV_PAIRS[_p] + '_' + SPIRAL_BANDS[_b]);
+    }
+  }
 
   var SNAP_HEADERS = [
     'session_id', 'session_date', 'snapshot_t',
@@ -144,8 +169,30 @@
     'i_ching_hex', 'i_ching_name',
     'coherence', 'focus', 'meditation', 'dominant_wave',
     'delta', 'theta', 'alpha', 'beta', 'gamma',
-    'heart_rate'
-  ];
+    'heart_rate',
+    // Spiral-wave metrics
+    'spiral_dominant_band',
+    'pl_left_lag_ms', 'pl_left_direction', 'pl_left_strength', 'pl_left_band',
+    'pl_right_lag_ms', 'pl_right_direction', 'pl_right_strength',
+    'pl_bilateral_lag_ms', 'pl_bilateral_direction', 'pl_bilateral_symmetry',
+    'hcr_theta', 'hcr_alpha', 'hcr_beta', 'hcr_gamma',
+    'artifact_movement_score', 'artifact_delta_likely'
+  ].concat(PLV_HEADERS);
+
+  function _hcrVal(hcr, band) {
+    return (hcr && hcr[band] && hcr[band].hcr != null) ? hcr[band].hcr : null;
+  }
+
+  function _plvRow(plv) {
+    var out = [];
+    for (var p = 0; p < PLV_PAIRS.length; p++) {
+      var cell = plv[PLV_PAIRS[p]] || {};
+      for (var b = 0; b < SPIRAL_BANDS.length; b++) {
+        out.push(cell[SPIRAL_BANDS[b]]);
+      }
+    }
+    return out;
+  }
 
   function exportSophiaSnapshotsCSV(sessions) {
     var rows = [];
@@ -158,6 +205,12 @@
         var sym = s.symbolic || {};
         var met = s.metrics || {};
         var bp = s.band_powers || {};
+        var sp = s.spiral || {};
+        var pll = sp.phase_lag_left || {};
+        var plr = sp.phase_lag_right || {};
+        var plb = sp.phase_lag_bilateral || {};
+        var hcr = sp.hcr || {};
+        var art = s.artifact || {};
         rows.push([
           r.session_id, r.session_date, s.t,
           s.position, s.frequency_hz, s.regime,
@@ -165,8 +218,14 @@
           sym.i_ching_hexagram, sym.i_ching_name,
           met.coherence, met.focus, met.meditation, met.dominant_wave,
           bp.delta, bp.theta, bp.alpha, bp.beta, bp.gamma,
-          s.heart_rate
-        ]);
+          s.heart_rate,
+          sp.dominant_band,
+          pll.lagMs, pll.direction, pll.strength, pll.band,
+          plr.lagMs, plr.direction, plr.strength,
+          plb.lagMs, plb.direction, plb.symmetry,
+          _hcrVal(hcr, 'theta'), _hcrVal(hcr, 'alpha'), _hcrVal(hcr, 'beta'), _hcrVal(hcr, 'gamma'),
+          art.movementScore, art.deltaArtifactLikely
+        ].concat(_plvRow(sp.plv_matrix || {})));
       }
     }
     return _buildCsv(SNAP_HEADERS, rows);
@@ -246,6 +305,9 @@
     'sophia_dominant_regime', 'sophia_dominant_geometry', 'sophia_hexagrams',
     'sophia_mean_coherence', 'sophia_peak_coherence',
     'sophia_mean_focus', 'sophia_mean_meditation',
+    'sophia_spiral_mean_hcr_theta', 'sophia_spiral_mean_hcr_alpha',
+    'sophia_spiral_mean_hcr_beta', 'sophia_spiral_mean_hcr_gamma',
+    'sophia_spiral_dominant_dir', 'sophia_spiral_mean_symmetry', 'sophia_spiral_samples',
     // RCT columns
     'rct_avg_coherence', 'rct_peak_coherence', 'rct_duration_seconds',
     'rct_baseline_position', 'rct_baseline_dominant_wave', 'rct_baseline_coherence',
@@ -298,6 +360,13 @@
         r.source === 'sophia' ? sophSum.hexagrams_encountered : null,
         sophSum.mean_coherence, sophSum.peak_coherence,
         sophSum.mean_focus, sophSum.mean_meditation,
+        (sophSum.spiral && sophSum.spiral.mean_hcr) ? sophSum.spiral.mean_hcr.theta : null,
+        (sophSum.spiral && sophSum.spiral.mean_hcr) ? sophSum.spiral.mean_hcr.alpha : null,
+        (sophSum.spiral && sophSum.spiral.mean_hcr) ? sophSum.spiral.mean_hcr.beta : null,
+        (sophSum.spiral && sophSum.spiral.mean_hcr) ? sophSum.spiral.mean_hcr.gamma : null,
+        sophSum.spiral ? sophSum.spiral.dominant_dir : null,
+        sophSum.spiral ? sophSum.spiral.mean_symmetry : null,
+        sophSum.spiral ? sophSum.spiral.samples : null,
         isRct ? sd.avg_coherence : null,
         isRct ? sd.peak_coherence : null,
         isRct ? sd.duration_seconds : null,
@@ -328,7 +397,13 @@
   // ─── Download helper ──────────────────────────────────────────
 
   function downloadAsFile(content, filename, mimeType) {
-    var blob = new Blob([content], { type: mimeType || 'text/plain' });
+    var type = mimeType || 'text/plain';
+    // Prepend a UTF-8 BOM for CSVs so spreadsheet apps (Excel, Numbers) detect
+    // UTF-8 and render em-dashes / accents correctly instead of mojibake.
+    // Never for JSON — a leading BOM makes JSON.parse throw on re-import.
+    var parts = (type.indexOf('csv') !== -1) ? [String.fromCharCode(0xFEFF), content] : [content];
+    if (type.indexOf('charset') === -1) type += ';charset=utf-8';
+    var blob = new Blob(parts, { type: type });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;

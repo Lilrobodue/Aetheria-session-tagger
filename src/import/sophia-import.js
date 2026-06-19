@@ -101,7 +101,11 @@
       },
       band_powers: bp,
       fnirs:       entry.fnirs || null,
-      heart_rate:  entry.heartRate != null ? entry.heartRate : null
+      heart_rate:  entry.heartRate != null ? entry.heartRate : null,
+      // Spiral-wave detection metrics (v2 exports). Passed through as-is —
+      // values are already 0-1 ratios / ms, no normalization needed.
+      spiral:      entry.spiral || null,
+      artifact:    entry.artifact || null
     };
   }
 
@@ -143,6 +147,213 @@
     return Math.round(sum / arr.length * 10) / 10;
   }
 
+  // Mean rounded to N decimal places (spiral PLV/HCR/symmetry need finer
+  // resolution than the 1-decimal _mean used for percentage metrics).
+  function _meanP(arr, places) {
+    if (!arr.length) return null;
+    var sum = 0;
+    for (var i = 0; i < arr.length; i++) sum += arr[i];
+    var f = Math.pow(10, places);
+    return Math.round(sum / arr.length * f) / f;
+  }
+
+  var SPIRAL_BANDS = ['theta', 'alpha', 'beta', 'gamma'];
+  var PLV_PAIRS = ['AF7_AF8', 'TP9_TP10', 'AF7_TP9', 'AF8_TP10', 'AF7_TP10', 'AF8_TP9'];
+
+  // Pick the most frequent key from a {key: count} object, honoring a
+  // preference order for ties.
+  function _dominantKey(counts, order) {
+    var best = null;
+    var bestN = -1;
+    for (var i = 0; i < order.length; i++) {
+      if (counts[order[i]] > bestN) {
+        bestN = counts[order[i]];
+        best = order[i];
+      }
+    }
+    return bestN > 0 ? best : null;
+  }
+
+  var DIR_ORDER = ['front-to-back', 'back-to-front', 'indeterminate'];
+
+  function _pathwaySummary(snapshots, key) {
+    var counts = { 'front-to-back': 0, 'back-to-front': 0, 'indeterminate': 0 };
+    var strengths = [];
+    for (var i = 0; i < snapshots.length; i++) {
+      var sp = snapshots[i].spiral;
+      var pl = sp && sp[key];
+      if (!pl) continue;
+      if (pl.direction && counts[pl.direction] != null) counts[pl.direction]++;
+      if (pl.strength != null) strengths.push(pl.strength);
+    }
+    return { direction: _dominantKey(counts, DIR_ORDER), strength: _meanP(strengths, 2) };
+  }
+
+  // Aggregate per-snapshot spiral metrics into a session-level summary.
+  // Returns null when no snapshot carries spiral data (pre-v2 exports).
+  function _computeSpiralSummary(snapshots) {
+    var hcr = { theta: [], alpha: [], beta: [], gamma: [] };
+    var dirCounts = { 'front-to-back': 0, 'back-to-front': 0, 'indeterminate': 0 };
+    var symVals = [];
+    var samples = 0;
+
+    // Running sums for the session-mean PLV matrix (pair × band).
+    var plvSum = {}, plvN = {};
+    for (var pi = 0; pi < PLV_PAIRS.length; pi++) {
+      plvSum[PLV_PAIRS[pi]] = { theta: 0, alpha: 0, beta: 0, gamma: 0 };
+      plvN[PLV_PAIRS[pi]]   = { theta: 0, alpha: 0, beta: 0, gamma: 0 };
+    }
+
+    for (var i = 0; i < snapshots.length; i++) {
+      var sp = snapshots[i].spiral;
+      if (!sp) continue;
+      samples++;
+      if (sp.hcr) {
+        for (var b = 0; b < SPIRAL_BANDS.length; b++) {
+          var band = SPIRAL_BANDS[b];
+          if (sp.hcr[band] && sp.hcr[band].hcr != null) hcr[band].push(sp.hcr[band].hcr);
+        }
+      }
+      var plb = sp.phase_lag_bilateral;
+      if (plb) {
+        if (plb.direction && dirCounts[plb.direction] != null) dirCounts[plb.direction]++;
+        if (plb.symmetry != null) symVals.push(plb.symmetry);
+      }
+      var plv = sp.plv_matrix;
+      if (plv) {
+        for (var p = 0; p < PLV_PAIRS.length; p++) {
+          var cell = plv[PLV_PAIRS[p]];
+          if (!cell) continue;
+          for (var c = 0; c < SPIRAL_BANDS.length; c++) {
+            var bnd = SPIRAL_BANDS[c];
+            if (cell[bnd] != null) { plvSum[PLV_PAIRS[p]][bnd] += cell[bnd]; plvN[PLV_PAIRS[p]][bnd]++; }
+          }
+        }
+      }
+    }
+
+    if (samples === 0) return null;
+
+    var meanPlv = {};
+    for (var pp = 0; pp < PLV_PAIRS.length; pp++) {
+      var pr = PLV_PAIRS[pp];
+      meanPlv[pr] = {};
+      for (var cc = 0; cc < SPIRAL_BANDS.length; cc++) {
+        var bb = SPIRAL_BANDS[cc];
+        meanPlv[pr][bb] = plvN[pr][bb] ? Math.round(plvSum[pr][bb] / plvN[pr][bb] * 100) / 100 : null;
+      }
+    }
+
+    return {
+      mean_hcr: {
+        theta: _meanP(hcr.theta, 2),
+        alpha: _meanP(hcr.alpha, 2),
+        beta:  _meanP(hcr.beta, 2),
+        gamma: _meanP(hcr.gamma, 2)
+      },
+      mean_plv_matrix:      meanPlv,
+      phase_lag_dir_counts: dirCounts,
+      dominant_dir:         _dominantKey(dirCounts, DIR_ORDER),
+      mean_symmetry:        _meanP(symVals, 2),
+      left_pathway:         _pathwaySummary(snapshots, 'phase_lag_left'),
+      right_pathway:        _pathwaySummary(snapshots, 'phase_lag_right'),
+      samples:              samples
+    };
+  }
+
+  // ─── Actionable Insights ──────────────────────────────────────
+  // Derive plain-language, actionable observations from the aggregated
+  // metrics. Each insight is { kind: 'good'|'watch'|'tip', text }.
+  // kind drives UI color; the text tells the user what to do next.
+
+  function _coherenceTrend(snapshots) {
+    var vals = [];
+    for (var i = 0; i < snapshots.length; i++) {
+      var c = snapshots[i].metrics && snapshots[i].metrics.coherence;
+      if (c != null) vals.push(c);
+    }
+    if (vals.length < 2) return null;
+    return { start: vals[0], end: vals[vals.length - 1] };
+  }
+
+  function _artifactCleanliness(snapshots) {
+    var total = 0, flagged = 0;
+    for (var i = 0; i < snapshots.length; i++) {
+      var a = snapshots[i].artifact;
+      if (!a) continue;
+      total++;
+      if (a.deltaArtifactLikely || (a.movementScore != null && a.movementScore > 0.3)) flagged++;
+    }
+    if (total === 0) return null;
+    return { total: total, flagged: flagged, pct: Math.round(flagged / total * 100) };
+  }
+
+  function generateSophiaInsights(summary, snapshots) {
+    var out = [];
+
+    // ── Coherence level + trend ──
+    var mc = summary.mean_coherence;
+    if (mc != null) {
+      if (mc >= 30) {
+        out.push({ kind: 'good', text: 'Strong mean coherence (' + mc + '%) - the field locked in well. A great session to repeat the conditions of.' });
+      } else if (mc >= 15) {
+        out.push({ kind: 'tip', text: 'Coherence averaged ' + mc + '% - a workable base. Longer holds at each position tend to push it higher.' });
+      } else {
+        out.push({ kind: 'watch', text: 'Mean coherence held at ' + mc + '% - still finding its floor. Build it with longer, settled GUT-regime sessions before climbing.' });
+      }
+    }
+    var tr = _coherenceTrend(snapshots);
+    if (tr) {
+      if (tr.end - tr.start >= 3) {
+        out.push({ kind: 'good', text: 'Coherence rose from ' + tr.start + '% to ' + tr.end + '% across the session - you were building toward lock. Extending the session could consolidate it.' });
+      } else if (tr.start - tr.end >= 3) {
+        out.push({ kind: 'watch', text: 'Coherence drifted down from ' + tr.start + '% to ' + tr.end + '% - fatigue or distraction may have crept in. A shorter session or a reset at the GUT base can help.' });
+      }
+    }
+
+    // ── Spiral wave direction + symmetry ──
+    var spi = summary.spiral;
+    if (spi) {
+      var sym = spi.mean_symmetry;
+      if (spi.dominant_dir && spi.dominant_dir !== 'indeterminate' && sym != null && sym >= 0.7) {
+        out.push({ kind: 'good', text: 'Traveling-wave direction held ' + spi.dominant_dir + ' with ' + sym + ' bilateral symmetry - a consistent, mirrored flow consistent with entrainment.' });
+      } else if (spi.dominant_dir === 'indeterminate' || (sym != null && sym < 0.5)) {
+        out.push({ kind: 'tip', text: 'Wave direction was variable' + (sym != null ? ' (symmetry ' + sym + ')' : '') + ' - typical of an unentrained baseline. A steady carrier tone tends to organize it over time.' });
+      }
+
+      // ── HCR — which band shows inter-hemispheric dominance ──
+      var mh = spi.mean_hcr || {};
+      var bestBand = null, bestHcr = -1;
+      ['theta', 'alpha', 'beta', 'gamma'].forEach(function (b) {
+        if (mh[b] != null && mh[b] > bestHcr) { bestHcr = mh[b]; bestBand = b; }
+      });
+      if (bestBand && bestHcr >= 1.2) {
+        out.push({ kind: 'good', text: 'Inter-hemispheric coherence peaked in ' + bestBand + ' (HCR ' + bestHcr + ') - strong cross-hemisphere binding, the spiral-mirroring signature. Note which regime was playing.' });
+      } else if (bestBand && bestHcr < 0.8) {
+        out.push({ kind: 'tip', text: 'Coherence leaned ipsilateral (front-to-back) across bands - flow was more within-hemisphere than mirrored. HEAD-regime work tends to lift inter-hemispheric coupling.' });
+      }
+    }
+
+    // ── Regime guidance ──
+    if (summary.dominant_regime === 'GUT') {
+      out.push({ kind: 'tip', text: 'Session anchored in the GUT regime (grounding/body). To progress toward HEART (emotion/flow), let theta and alpha rise together while staying relaxed.' });
+    } else if (summary.dominant_regime) {
+      out.push({ kind: 'tip', text: 'Time was spent mostly in the ' + summary.dominant_regime + ' regime - compare its spiral signature against your GUT baseline sessions.' });
+    }
+
+    // ── Data quality ──
+    var art = _artifactCleanliness(snapshots);
+    if (art) {
+      if (art.pct <= 10) {
+        out.push({ kind: 'good', text: 'Clean data - movement artifact flagged in only ' + art.pct + '% of epochs, so these readings are trustworthy.' });
+      } else if (art.pct >= 30) {
+        out.push({ kind: 'watch', text: 'Movement artifact flagged in ' + art.pct + '% of epochs - interpret cautiously. Settling more still next time will sharpen the data.' });
+      }
+    }
+
+    return out;
+  }
+
   function computeSophiaSummary(snapshots) {
     var regimes = [];
     var geometries = [];
@@ -171,15 +382,18 @@
     }
     hexNums.sort(function (a, b) { return a - b; });
 
-    return {
+    var summary = {
       dominant_regime:       _modeOf(regimes),
       dominant_geometry:     _modeOf(geometries),
       hexagrams_encountered: hexNums,
       mean_coherence:        _mean(cohVals),
       peak_coherence:        cohVals.length ? Math.max.apply(null, cohVals) : null,
       mean_focus:            _mean(focVals),
-      mean_meditation:       _mean(medVals)
+      mean_meditation:       _mean(medVals),
+      spiral:                _computeSpiralSummary(snapshots)
     };
+    summary.insights = generateSophiaInsights(summary, snapshots);
+    return summary;
   }
 
   // ─── Merge + Dedup ────────────────────────────────────────────
@@ -409,6 +623,7 @@
     validateSophiaExport:     validateSophiaExport,
     convertSnapshot:          convertSnapshot,
     computeSophiaSummary:     computeSophiaSummary,
+    generateSophiaInsights:   generateSophiaInsights,
     mergeSnapshots:           mergeSnapshots,
     findRecentSophiaSessions: findRecentSophiaSessions,
     buildNewSophiaRecord:     buildNewSophiaRecord,
