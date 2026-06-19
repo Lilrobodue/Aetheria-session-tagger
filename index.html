@@ -168,6 +168,41 @@ input[type=range]{width:100%;accent-color:var(--gld)}
 .hcr-bar .hb-mid{position:absolute;left:33.3%;top:0;bottom:0;width:1px;background:var(--mut);opacity:.6}
 .hcr-bar .hb-fill{height:100%;border-radius:5px}
 .hcr-bar .hb-val{width:54px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:9px}
+.tw-wrap{display:flex;gap:12px;align-items:center;margin:6px 0;background:var(--bg3);border:1px solid var(--bdr);border-radius:6px;padding:10px}
+.tw-compass{flex-shrink:0;width:62px;height:62px;border-radius:50%;border:1px solid var(--bdr);position:relative;background:radial-gradient(circle,var(--bg2),var(--bg))}
+.tw-compass .tw-tick{position:absolute;font-size:7px;color:var(--dim)}
+.tw-compass .tw-n{top:1px;left:50%;transform:translateX(-50%)}
+.tw-compass .tw-s{bottom:1px;left:50%;transform:translateX(-50%)}
+.tw-compass .tw-e{right:2px;top:50%;transform:translateY(-50%)}
+.tw-compass .tw-w{left:2px;top:50%;transform:translateY(-50%)}
+.tw-compass .tw-needle{position:absolute;left:50%;top:50%;width:2px;height:24px;background:linear-gradient(to top,transparent,var(--gld));transform-origin:bottom center}
+.tw-compass .tw-hub{position:absolute;left:50%;top:50%;width:5px;height:5px;border-radius:50%;background:var(--gld);transform:translate(-50%,-50%)}
+.tw-info{flex:1;font-size:10px;color:var(--sub);line-height:1.5}
+.tw-info .tw-k{color:var(--mut)}
+.tw-info .tw-v{color:var(--gld);font-family:'JetBrains Mono',monospace}
+.tw-snap{font-size:9px;color:var(--dim);margin-top:3px}
+
+/* ─── Neurodynamics ─── */
+.nd-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:4px 0}
+.nd-card{background:var(--bg3);border:1px solid var(--bdr);border-radius:6px;padding:8px 4px;text-align:center}
+.nd-card .ndv{font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--gld)}
+.nd-card .ndl{font-size:8px;color:var(--mut);letter-spacing:.04em;text-transform:uppercase;margin-top:3px}
+.nd-meta{font-size:9px;color:var(--dim);margin:4px 0}
+.nd-meta .nv{color:var(--gld)}
+.nd-toggle{font-size:9px;color:var(--dim);margin:6px 0 3px;display:flex;gap:5px;align-items:center}
+.nd-toggle .ndt-opt{cursor:pointer;padding:2px 8px;border:1px solid var(--bdr);border-radius:10px;color:var(--sub);transition:all .15s}
+.nd-toggle .ndt-opt.active{border-color:var(--gld);color:var(--gld);background:#d4a57412}
+.nd-toggle .ndt-opt:hover{color:var(--gld)}
+
+/* ─── Channel quality ─── */
+.chq-row{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}
+.chq{flex:1;min-width:64px;background:var(--bg3);border:1px solid var(--bdr);border-left-width:2px;border-radius:6px;padding:7px 8px}
+.chq.good{border-left-color:var(--grn)}
+.chq.bad{border-left-color:var(--red)}
+.chq .chq-ch{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gld);display:flex;justify-content:space-between;align-items:center;gap:4px}
+.chq .chq-tag{font-size:8px}
+.chq .chq-m{font-size:9px;color:var(--sub);margin-top:2px;font-family:'JetBrains Mono',monospace}
+.verdict{font-size:10px;color:var(--sub);line-height:1.45;background:var(--bg3);border:1px solid var(--bdr);border-radius:6px;padding:8px 10px;margin-top:5px;font-style:italic}
 
 /* ─── Import dialogs ─── */
 .import-summary{background:var(--bg2);border:1px solid var(--grn);border-radius:8px;padding:14px;margin-top:10px;text-align:center}
@@ -272,6 +307,7 @@ let state={
   view:'home',
   currentSessionId:null,
   expandedSnapshots:{},
+  ndHeatmapMode:'relative',
   lastImportSummary:null,
   importDuplicate:null,
   sophiaImport:null,
@@ -690,6 +726,126 @@ function renderHcrGauge(mh){
   return h;
 }
 
+// Traveling-wave compass. angleDeg uses math convention (0=rightward/east,
+// 90=forward/up, ±180=leftward, -90=backward). CSS rotate is clockwise from
+// up, so needle rotation = (90 - angle).
+function renderTravelingWave(tw){
+  if(!tw)return '';
+  const ang=tw.mean_angle_deg;
+  const needleRot=(ang!=null)?(90-ang):0;
+  const rot=tw.rotation||{};
+  const rotating=(rot.cw||0)+(rot.ccw||0);
+  let rotLabel='—';
+  if(rotating){
+    const sense=rot.ccw>rot.cw?'↺ CCW':rot.cw>rot.ccw?'↻ CW':'mixed';
+    rotLabel=sense+' · '+rotating+'/'+tw.samples+' epochs'+(rot.mean_abs_deg_per_sec!=null?' · ~'+rot.mean_abs_deg_per_sec+'°/s':'');
+  }
+  let h='<div class="tw-wrap">';
+  h+='<div class="tw-compass">';
+  h+='<span class="tw-tick tw-n">FWD</span><span class="tw-tick tw-s">BCK</span>';
+  h+='<span class="tw-tick tw-e">R</span><span class="tw-tick tw-w">L</span>';
+  if(ang!=null)h+='<div class="tw-needle" style="transform:translate(-50%,-100%) rotate('+needleRot+'deg)"></div>';
+  h+='<div class="tw-hub"></div>';
+  h+='</div>';
+  h+='<div class="tw-info">';
+  if(tw.dominant_direction)h+='<div><span class="tw-k">Heading:</span> <span class="tw-v">'+tw.dominant_direction+(ang!=null?' ('+ang+'°)':'')+'</span></div>';
+  if(tw.mean_speed_mps!=null)h+='<div><span class="tw-k">Speed:</span> <span class="tw-v">'+tw.mean_speed_mps+' m/s</span> · <span class="tw-k">Planarity:</span> <span class="tw-v">'+(tw.mean_planarity!=null?tw.mean_planarity:'—')+'</span></div>';
+  h+='<div><span class="tw-k">Rotation:</span> <span class="tw-v">'+rotLabel+'</span></div>';
+  h+='</div></div>';
+  return h;
+}
+
+// ─── Neurodynamics (signal complexity) ───
+// lo/hi = fixed physiological ranges for absolute (cross-session) shading.
+// Literature-informed estimates for waking Muse-S EEG, not yet calibrated to
+// the user's own distribution — refine once enough clean sessions accumulate.
+// LZ is mathematically normalized to 0-1, so its range is principled, not a guess.
+var ND_METRICS=[
+  {key:'higuchiFD',     label:'FD',     full:'Higuchi FD',     dp:2, lo:1.3, hi:1.9},
+  {key:'sampleEntropy', label:'SampEn', full:'Sample Entropy', dp:2, lo:0.5, hi:2.0},
+  {key:'lempelZiv',     label:'LZ',     full:'Lempel-Ziv',     dp:2, lo:0,   hi:1.0},
+  {key:'recurrenceRate',label:'Rec',    full:'Recurrence Rate',dp:3, lo:0,   hi:0.02}
+];
+var ND_CHANNELS=['TP9','AF7','AF8','TP10'];
+
+function ndColor(t){
+  if(t==null)return 'var(--bg)';
+  var a=Math.max(0,Math.min(1,t));
+  return 'rgba(212,165,116,'+(0.10+a*0.85).toFixed(3)+')'; // gold gradient, dark→bright
+}
+
+// mode: 'relative' (shade vs this session's channel spread) or
+// 'fixed' (shade vs fixed physiological ranges, comparable across sessions).
+function renderNeurodynamics(nd,mode){
+  if(!nd)return '';
+  mode=mode||'relative';
+  const mean=nd.mean||{};
+  let h='<div class="nd-cards">';
+  ND_METRICS.forEach(function(m){
+    const v=mean[m.key];
+    h+='<div class="nd-card"><div class="ndv">'+(v!=null?v.toFixed(m.dp):'—')+'</div><div class="ndl">'+m.label+'</div></div>';
+  });
+  h+='</div>';
+  const pc=nd.perChannel;
+  if(pc){
+    // relative shading needs per-metric min/max across channels
+    const ranges={};
+    ND_METRICS.forEach(function(m){
+      let mn=Infinity,mx=-Infinity;
+      ND_CHANNELS.forEach(function(ch){const v=pc[ch]&&pc[ch][m.key];if(v!=null){if(v<mn)mn=v;if(v>mx)mx=v;}});
+      ranges[m.key]={mn:mn,mx:mx};
+    });
+    // shading-mode toggle
+    h+='<div class="nd-toggle">Shading: '+
+       '<span class="ndt-opt'+(mode==='relative'?' active':'')+'" onclick="setNdMode(\'relative\')">relative</span>'+
+       '<span class="ndt-opt'+(mode==='fixed'?' active':'')+'" onclick="setNdMode(\'fixed\')">fixed ranges</span></div>';
+    h+='<div class="spiral-viz"><div class="plv-grid"><div></div>';
+    ND_METRICS.forEach(function(m){h+='<div class="plv-bh">'+m.label+'</div>';});
+    ND_CHANNELS.forEach(function(ch){
+      h+='<div class="plv-rl">'+ch+'</div>';
+      ND_METRICS.forEach(function(m){
+        const v=pc[ch]&&pc[ch][m.key];
+        let t=null;
+        if(v!=null){
+          if(mode==='fixed'){ t=(v-m.lo)/(m.hi-m.lo); }
+          else { const r=ranges[m.key]; t=(r.mx>r.mn)?(v-r.mn)/(r.mx-r.mn):0.5; }
+        }
+        h+='<div class="plv-cell" style="background:'+ndColor(t)+'" title="'+ch+' '+m.full+': '+(v!=null?v:'—')+'">'+(v!=null?v.toFixed(m.dp):'')+'</div>';
+      });
+    });
+    h+='</div><div class="plv-cap"><span>'+(mode==='fixed'?'Shaded vs fixed ranges':'Shaded vs session spread')+'</span><span>'+(nd.portraitChannel?'portrait: '+nd.portraitChannel:'')+'</span></div></div>';
+    if(mode==='fixed'){
+      h+='<div class="nd-meta">Ranges: '+ND_METRICS.map(function(m){return m.label+' '+m.lo+'–'+m.hi;}).join(' · ')+'</div>';
+    }
+  }
+  if(nd.tau!=null||nd.embeddingDim!=null)h+='<div class="nd-meta">Embedding: <span class="nv">τ='+(nd.tau!=null?nd.tau:'—')+'</span> · <span class="nv">dim='+(nd.embeddingDim!=null?nd.embeddingDim:'—')+'</span> · higher complexity = richer, less predictable signal</div>';
+  return h;
+}
+
+// ─── Channel signal quality ───
+function renderChannelDiagnostic(cd){
+  if(!cd)return '';
+  const stats=cd.stats||{};
+  const flagged=(cd.lineNoise&&cd.lineNoise.flaggedChannels)||[];
+  let h='<div class="chq-row">';
+  ND_CHANNELS.forEach(function(ch){
+    const s=stats[ch];if(!s)return;
+    const sp=s.spectrum||{};
+    const eeg=sp.eegLike;
+    h+='<div class="chq '+(eeg?'good':'bad')+'">';
+    h+='<div class="chq-ch">'+ch+'<span class="chq-tag" style="color:'+(eeg?'var(--grn)':'var(--red)')+'">'+(eeg?'EEG ✓':'noisy ✗')+'</span></div>';
+    h+='<div class="chq-m">RMS '+(s.rms!=null?s.rms.toFixed(1):'—')+'</div>';
+    if(sp.lineNoiseRatio!=null)h+='<div class="chq-m">line '+Math.round(sp.lineNoiseRatio*100)+'%'+(flagged.indexOf(ch)!==-1?' ⚡':'')+'</div>';
+    h+='</div>';
+  });
+  h+='</div>';
+  if(cd.lineNoise&&cd.lineNoise.meanScalpRatio!=null){
+    h+='<div class="nd-meta">Mean scalp line-noise: <span class="nv">'+Math.round(cd.lineNoise.meanScalpRatio*100)+'%</span>'+(flagged.length?' · flagged: '+flagged.join(', '):'')+'</div>';
+  }
+  if(cd.verdict)h+='<div class="verdict">'+cd.verdict+'</div>';
+  return h;
+}
+
 function renderInsights(insights){
   if(!insights||!insights.length)return '';
   var icons={good:'✓',watch:'!',tip:'→'};
@@ -745,7 +901,20 @@ function renderSourceSophia(rec){
     h+='<div class="section-title">Spiral Waves'+(sp.samples?' · '+sp.samples+' epochs':'')+'</div>';
     h+=renderPlvHeatmap(sp.mean_plv_matrix,{label:'session mean',values:true});
     h+=renderWaveDirection(sp);
+    if(sp.traveling_wave)h+=renderTravelingWave(sp.traveling_wave);
     h+=renderHcrGauge(sp.mean_hcr);
+  }
+
+  // Neurodynamics (v2.1 exports)
+  if(sd.neurodynamics){
+    h+='<div class="section-title">Neurodynamics</div>';
+    h+=renderNeurodynamics(sd.neurodynamics, state.ndHeatmapMode);
+  }
+
+  // Signal quality (v2.1 exports)
+  if(sd.channel_diagnostic){
+    h+='<div class="section-title">Signal Quality</div>';
+    h+=renderChannelDiagnostic(sd.channel_diagnostic);
   }
 
   // Snapshots (expandable)
@@ -803,6 +972,13 @@ function renderSourceSophia(rec){
           }).filter(Boolean);
           if(hcrParts.length)h+='· '+hcrParts.join(' ');
           h+='</div>';
+          const tw=sp.traveling_wave;
+          if(tw){
+            h+='<div class="tw-snap">Wave: '+(tw.direction||'—')+(tw.angleDeg!=null?' ('+tw.angleDeg+'°)':'');
+            if(tw.speedMps!=null)h+=' · '+tw.speedMps+' m/s';
+            if(tw.rotationDegPerSec!=null&&tw.rotationDegPerSec!==0)h+=' · '+(tw.rotationDegPerSec>0?'↺':'↻')+Math.abs(tw.rotationDegPerSec)+'°/s';
+            h+='</div>';
+          }
         }
         h+='</div>';
       }
@@ -1637,6 +1813,7 @@ window.saveManual=function(){
 
 // ─── Snapshot toggle ───
 window.toggleSnap=function(i){state.expandedSnapshots[i]=!state.expandedSnapshots[i];render();};
+window.setNdMode=function(m){state.ndHeatmapMode=m;render();};
 
 // ═══════════════════════════════════════
 // NAVIGATION (hash-based)

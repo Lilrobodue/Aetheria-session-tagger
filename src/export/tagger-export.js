@@ -116,16 +116,19 @@
     'mean_coherence', 'peak_coherence', 'mean_focus', 'mean_meditation',
     'spiral_mean_hcr_theta', 'spiral_mean_hcr_alpha',
     'spiral_mean_hcr_beta', 'spiral_mean_hcr_gamma',
-    'spiral_dominant_dir', 'spiral_mean_symmetry', 'spiral_samples'
+    'spiral_dominant_dir', 'spiral_mean_symmetry', 'spiral_samples',
+    'tw_dominant_direction', 'tw_mean_angle_deg', 'tw_mean_speed_mps', 'tw_mean_planarity'
   ]);
 
-  // Flatten a summary.spiral block into CSV cell values (7 columns).
+  // Flatten a summary.spiral block into CSV cell values (11 columns).
   function _spiralSummaryRow(sum) {
     var spi = (sum && sum.spiral) || {};
     var mh = spi.mean_hcr || {};
+    var tw = spi.traveling_wave || {};
     return [
       mh.theta, mh.alpha, mh.beta, mh.gamma,
-      spi.dominant_dir, spi.mean_symmetry, spi.samples
+      spi.dominant_dir, spi.mean_symmetry, spi.samples,
+      tw.dominant_direction, tw.mean_angle_deg, tw.mean_speed_mps, tw.mean_planarity
     ];
   }
 
@@ -176,6 +179,9 @@
     'pl_right_lag_ms', 'pl_right_direction', 'pl_right_strength',
     'pl_bilateral_lag_ms', 'pl_bilateral_direction', 'pl_bilateral_symmetry',
     'hcr_theta', 'hcr_alpha', 'hcr_beta', 'hcr_gamma',
+    // Traveling-wave vector (v2.1 exports)
+    'tw_band', 'tw_angle_deg', 'tw_direction', 'tw_speed_mps',
+    'tw_planarity', 'tw_strength', 'tw_rotation_deg_per_sec',
     'artifact_movement_score', 'artifact_delta_likely'
   ].concat(PLV_HEADERS);
 
@@ -210,6 +216,7 @@
         var plr = sp.phase_lag_right || {};
         var plb = sp.phase_lag_bilateral || {};
         var hcr = sp.hcr || {};
+        var tw = sp.traveling_wave || {};
         var art = s.artifact || {};
         rows.push([
           r.session_id, r.session_date, s.t,
@@ -224,6 +231,8 @@
           plr.lagMs, plr.direction, plr.strength,
           plb.lagMs, plb.direction, plb.symmetry,
           _hcrVal(hcr, 'theta'), _hcrVal(hcr, 'alpha'), _hcrVal(hcr, 'beta'), _hcrVal(hcr, 'gamma'),
+          tw.band, tw.angleDeg, tw.direction, tw.speedMps,
+          tw.planarity, tw.strength, tw.rotationDegPerSec,
           art.movementScore, art.deltaArtifactLikely
         ].concat(_plvRow(sp.plv_matrix || {})));
       }
@@ -308,6 +317,8 @@
     'sophia_spiral_mean_hcr_theta', 'sophia_spiral_mean_hcr_alpha',
     'sophia_spiral_mean_hcr_beta', 'sophia_spiral_mean_hcr_gamma',
     'sophia_spiral_dominant_dir', 'sophia_spiral_mean_symmetry', 'sophia_spiral_samples',
+    'sophia_tw_dominant_direction', 'sophia_tw_mean_angle_deg',
+    'sophia_tw_mean_speed_mps', 'sophia_tw_mean_planarity',
     // RCT columns
     'rct_avg_coherence', 'rct_peak_coherence', 'rct_duration_seconds',
     'rct_baseline_position', 'rct_baseline_dominant_wave', 'rct_baseline_coherence',
@@ -367,6 +378,10 @@
         sophSum.spiral ? sophSum.spiral.dominant_dir : null,
         sophSum.spiral ? sophSum.spiral.mean_symmetry : null,
         sophSum.spiral ? sophSum.spiral.samples : null,
+        (sophSum.spiral && sophSum.spiral.traveling_wave) ? sophSum.spiral.traveling_wave.dominant_direction : null,
+        (sophSum.spiral && sophSum.spiral.traveling_wave) ? sophSum.spiral.traveling_wave.mean_angle_deg : null,
+        (sophSum.spiral && sophSum.spiral.traveling_wave) ? sophSum.spiral.traveling_wave.mean_speed_mps : null,
+        (sophSum.spiral && sophSum.spiral.traveling_wave) ? sophSum.spiral.traveling_wave.mean_planarity : null,
         isRct ? sd.avg_coherence : null,
         isRct ? sd.peak_coherence : null,
         isRct ? sd.duration_seconds : null,

@@ -729,6 +729,155 @@ describe('actionable insights', function () {
   });
 });
 
+describe('traveling wave (v2.1 exports)', function () {
+
+  function twSnap(t, tw) {
+    return SophiaImport.convertSnapshot({
+      t: t, regime: 'GUT', coherence: 9, delta: 40, theta: 20, alpha: 10, beta: 18, gamma: 12,
+      spiral: { plv_matrix: {}, phase_lag_bilateral: { direction: 'front-to-back', symmetry: 0.8 }, hcr: {}, traveling_wave: tw }
+    });
+  }
+
+  it('convertSnapshot should preserve the traveling_wave block', function () {
+    var s = twSnap('2026-06-19T13:40:16.830Z', { band: 'alpha', angleDeg: 33, direction: 'front-right', speedMps: 7.62, planarity: 0.65, strength: 0.16, rotationDegPerSec: null });
+    assert(s.spiral.traveling_wave, 'tw present');
+    assertEqual(s.spiral.traveling_wave.angleDeg, 33);
+    assertEqual(s.spiral.traveling_wave.direction, 'front-right');
+  });
+
+  it('should aggregate traveling-wave vectors into the summary', function () {
+    var snaps = [
+      twSnap('2026-06-19T13:40:16.830Z', { angleDeg: 0,  direction: 'rightward', speedMps: 2, planarity: 0.9, strength: 0.3, rotationDegPerSec: 99 }),
+      twSnap('2026-06-19T13:40:46.830Z', { angleDeg: 90, direction: 'leftward',  speedMps: 4, planarity: 0.5, strength: 0.5, rotationDegPerSec: -35 }),
+      twSnap('2026-06-19T13:41:16.830Z', { angleDeg: 90, direction: 'leftward',  speedMps: 6, planarity: 0.7, strength: 0.4, rotationDegPerSec: null })
+    ];
+    var sum = SophiaImport.computeSophiaSummary(snaps);
+    var tw = sum.spiral.traveling_wave;
+    assert(tw, 'traveling_wave summary present');
+    assertEqual(tw.samples, 3);
+    assertEqual(tw.dominant_direction, 'leftward'); // 2x leftward
+    assertEqual(tw.mean_speed_mps, 4);              // (2+4+6)/3
+    assertEqual(tw.mean_planarity, 0.7);            // (0.9+0.5+0.7)/3
+    // circular mean of 0°, 90°, 90° = atan2(2,1) ≈ 63°
+    assertEqual(tw.mean_angle_deg, 63);
+    // rotation: 99>0 ccw, -35<0 cw, null none
+    assertEqual(tw.rotation.ccw, 1);
+    assertEqual(tw.rotation.cw, 1);
+    assertEqual(tw.rotation.none, 1);
+    assertEqual(tw.rotation.mean_abs_deg_per_sec, 67); // (99+35)/2
+  });
+
+  it('should be null when no snapshot has a traveling_wave', function () {
+    var snap = SophiaImport.convertSnapshot(makeSpiralEntry('2026-06-19T10:00:11.987Z'));
+    var sum = SophiaImport.computeSophiaSummary([snap]);
+    assertEqual(sum.spiral.traveling_wave, null);
+  });
+
+  it('should generate a rotating-wave insight when most epochs rotate', function () {
+    var snaps = [
+      twSnap('2026-06-19T13:40:16.830Z', { angleDeg: 0,  direction: 'leftward', speedMps: 2, planarity: 0.9, strength: 0.3, rotationDegPerSec: 99 }),
+      twSnap('2026-06-19T13:40:46.830Z', { angleDeg: 10, direction: 'leftward', speedMps: 3, planarity: 0.8, strength: 0.4, rotationDegPerSec: 80 })
+    ];
+    var sum = SophiaImport.computeSophiaSummary(snaps);
+    var rotating = sum.insights.some(function (x) { return /rotating waves/i.test(x.text); });
+    assert(rotating, 'should report rotating waves');
+  });
+});
+
+describe('session-level diagnostics (v2.1 exports)', function () {
+
+  it('buildNewSophiaRecord should capture neurodynamics and channel_diagnostic', function () {
+    freshEnv();
+    var exp = makeSophiaExport({
+      neurodynamics: { mean: { higuchiFD: 1.6, sampleEntropy: 1.1 }, portraitChannel: 'TP10' },
+      channelDiagnostic: { verdict: 'AUX channels not usable', lineNoise: { meanScalpRatio: 0.9 } },
+      timeline: [makeSpiralEntry('2026-06-19T10:00:11.987Z')]
+    });
+    var rec = SophiaImport.buildNewSophiaRecord(exp);
+    assert(rec.source_data.neurodynamics, 'neurodynamics captured');
+    assertEqual(rec.source_data.neurodynamics.portraitChannel, 'TP10');
+    assert(rec.source_data.channel_diagnostic, 'channel_diagnostic captured');
+    var v = TaggerStore.validateRecord(rec);
+    assertEqual(v.valid, true, 'should be valid: ' + v.errors.join(', '));
+  });
+
+  it('should be null for exports without those fields', function () {
+    freshEnv();
+    var rec = SophiaImport.buildNewSophiaRecord(makeSophiaExport());
+    assertEqual(rec.source_data.neurodynamics, null);
+    assertEqual(rec.source_data.channel_diagnostic, null);
+  });
+});
+
+describe('neurodynamics insights (v2.1 exports)', function () {
+
+  function ndExport(nd, cd) {
+    return makeSophiaExport({
+      neurodynamics: nd,
+      channelDiagnostic: cd,
+      timeline: [makeSpiralEntry('2026-06-19T10:00:11.987Z')]
+    });
+  }
+
+  it('should flag a healthy complexity range', function () {
+    var rec = SophiaImport.buildNewSophiaRecord(ndExport({
+      portraitChannel: 'TP10', tau: 7, embeddingDim: 3,
+      mean: { higuchiFD: 1.60, sampleEntropy: 1.13, lempelZiv: 0.72, recurrenceRate: 0.006 },
+      perChannel: {
+        TP9:  { higuchiFD: 1.61 }, AF7: { higuchiFD: 1.66 },
+        AF8:  { higuchiFD: 1.64 }, TP10:{ higuchiFD: 1.48 }
+      }
+    }));
+    var hit = rec.source_data.summary.insights.some(function (x) {
+      return x.kind === 'good' && /complexity/i.test(x.text) && /Higuchi FD 1\.60/.test(x.text);
+    });
+    assert(hit, 'should report healthy complexity');
+  });
+
+  it('should flag low complexity as a tip', function () {
+    var rec = SophiaImport.buildNewSophiaRecord(ndExport({
+      mean: { higuchiFD: 1.25 }
+    }));
+    var hit = rec.source_data.summary.insights.some(function (x) {
+      return x.kind === 'tip' && /complexity was low/i.test(x.text);
+    });
+    assert(hit, 'should report low complexity');
+  });
+
+  it('should flag a wide cross-channel complexity gap', function () {
+    var rec = SophiaImport.buildNewSophiaRecord(ndExport({
+      mean: { higuchiFD: 1.6 },
+      perChannel: {
+        TP9: { higuchiFD: 1.9 }, AF7: { higuchiFD: 1.5 },
+        AF8: { higuchiFD: 1.55 }, TP10: { higuchiFD: 1.45 }
+      }
+    }));
+    var hit = rec.source_data.summary.insights.some(function (x) {
+      return x.kind === 'watch' && /varied across channels/i.test(x.text);
+    });
+    assert(hit, 'should report cross-channel gap (1.9 vs 1.45)');
+  });
+
+  it('should warn about non-EEG-like channels', function () {
+    var rec = SophiaImport.buildNewSophiaRecord(ndExport(
+      { mean: { higuchiFD: 1.6 } },
+      { stats: { AF7: { spectrum: { eegLike: false } }, TP9: { spectrum: { eegLike: true } } } }
+    ));
+    var hit = rec.source_data.summary.insights.some(function (x) {
+      return x.kind === 'watch' && /AF7 looked more like noise/i.test(x.text);
+    });
+    assert(hit, 'should warn about AF7');
+  });
+
+  it('should add no neurodynamics insights when data is absent', function () {
+    var rec = SophiaImport.buildNewSophiaRecord(makeSophiaExport());
+    var hit = rec.source_data.summary.insights.some(function (x) {
+      return /complexity|Higuchi|noise than clean EEG/i.test(x.text);
+    });
+    assert(!hit, 'no neuro insights without data');
+  });
+});
+
 describe('spiral export', function () {
 
   it('exportSophiaSnapshotsCSV should include PLV matrix and HCR columns', function () {

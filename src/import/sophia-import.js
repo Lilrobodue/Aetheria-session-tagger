@@ -176,6 +176,54 @@
 
   var DIR_ORDER = ['front-to-back', 'back-to-front', 'indeterminate'];
 
+  // Circular mean of a list of angles in degrees (handles wrap-around at ±180).
+  function _circularMeanDeg(anglesDeg) {
+    if (!anglesDeg.length) return null;
+    var sx = 0, sy = 0;
+    for (var i = 0; i < anglesDeg.length; i++) {
+      var r = anglesDeg[i] * Math.PI / 180;
+      sx += Math.cos(r);
+      sy += Math.sin(r);
+    }
+    return Math.round(Math.atan2(sy, sx) * 180 / Math.PI);
+  }
+
+  // Aggregate the per-snapshot spiral.traveling_wave vectors (v2.1 exports).
+  // Returns null when no snapshot carries a traveling_wave block.
+  function _travelingWaveSummary(snapshots) {
+    var angles = [], speeds = [], planar = [], strengths = [], dirs = [];
+    var cw = 0, ccw = 0, none = 0, absRot = [];
+    var n = 0;
+    for (var i = 0; i < snapshots.length; i++) {
+      var sp = snapshots[i].spiral;
+      var tw = sp && sp.traveling_wave;
+      if (!tw) continue;
+      n++;
+      if (tw.angleDeg != null) angles.push(tw.angleDeg);
+      if (tw.speedMps != null) speeds.push(tw.speedMps);
+      if (tw.planarity != null) planar.push(tw.planarity);
+      if (tw.strength != null) strengths.push(tw.strength);
+      if (tw.direction) dirs.push(tw.direction);
+      var rot = tw.rotationDegPerSec;
+      // sign convention: positive = counter-clockwise, negative = clockwise
+      if (rot == null || rot === 0) { none++; }
+      else { if (rot > 0) ccw++; else cw++; absRot.push(Math.abs(rot)); }
+    }
+    if (n === 0) return null;
+    return {
+      mean_angle_deg:     _circularMeanDeg(angles),
+      dominant_direction: _modeOf(dirs),
+      mean_speed_mps:     _meanP(speeds, 2),
+      mean_planarity:     _meanP(planar, 2),
+      mean_strength:      _meanP(strengths, 2),
+      rotation: {
+        cw: cw, ccw: ccw, none: none,
+        mean_abs_deg_per_sec: _meanP(absRot, 0)
+      },
+      samples: n
+    };
+  }
+
   function _pathwaySummary(snapshots, key) {
     var counts = { 'front-to-back': 0, 'back-to-front': 0, 'indeterminate': 0 };
     var strengths = [];
@@ -257,6 +305,7 @@
       mean_symmetry:        _meanP(symVals, 2),
       left_pathway:         _pathwaySummary(snapshots, 'phase_lag_left'),
       right_pathway:        _pathwaySummary(snapshots, 'phase_lag_right'),
+      traveling_wave:       _travelingWaveSummary(snapshots),
       samples:              samples
     };
   }
@@ -288,7 +337,7 @@
     return { total: total, flagged: flagged, pct: Math.round(flagged / total * 100) };
   }
 
-  function generateSophiaInsights(summary, snapshots) {
+  function generateSophiaInsights(summary, snapshots, diagnostics) {
     var out = [];
 
     // ── Coherence level + trend ──
@@ -332,6 +381,19 @@
       } else if (bestBand && bestHcr < 0.8) {
         out.push({ kind: 'tip', text: 'Coherence leaned ipsilateral (front-to-back) across bands - flow was more within-hemisphere than mirrored. HEAD-regime work tends to lift inter-hemispheric coupling.' });
       }
+
+      // ── Traveling wave (spiral rotation) ──
+      var tw = spi.traveling_wave;
+      if (tw) {
+        var rot = tw.rotation || {};
+        var rotating = (rot.cw || 0) + (rot.ccw || 0);
+        if (tw.samples && rotating / tw.samples >= 0.5) {
+          var sense = rot.ccw > rot.cw ? 'counter-clockwise' : rot.cw > rot.ccw ? 'clockwise' : 'mixed';
+          out.push({ kind: 'good', text: 'Rotating waves detected in ' + rotating + ' of ' + tw.samples + ' epochs (mostly ' + sense + ', ~' + rot.mean_abs_deg_per_sec + ' deg/s) - the rotating-wave signature the spiral hypothesis predicts.' });
+        } else if (tw.mean_planarity != null && tw.mean_planarity >= 0.7) {
+          out.push({ kind: 'tip', text: 'Traveling waves were mostly planar (planarity ' + tw.mean_planarity + ', heading ' + (tw.dominant_direction || 'mixed') + ') rather than rotating - a directional sweep rather than a spiral.' });
+        }
+      }
     }
 
     // ── Regime guidance ──
@@ -351,10 +413,57 @@
       }
     }
 
+    // ── Neurodynamics: signal complexity (v2.1 exports) ──
+    var nd = diagnostics && diagnostics.neurodynamics;
+    if (nd && nd.mean) {
+      var fd = nd.mean.higuchiFD, se = nd.mean.sampleEntropy, rr = nd.mean.recurrenceRate;
+      if (fd != null) {
+        if (fd < 1.4) {
+          out.push({ kind: 'tip', text: 'Signal complexity was low (Higuchi FD ' + fd.toFixed(2) + ') - an ordered, regular state, the kind seen in calm or deeply settled stretches.' });
+        } else if (fd > 1.85) {
+          out.push({ kind: 'tip', text: 'Signal complexity ran high (Higuchi FD ' + fd.toFixed(2) + ') - an active, less predictable state. If it stays high at rest, double-check electrode contact.' });
+        } else {
+          out.push({ kind: 'good', text: 'Signal complexity sat in the typical waking-EEG range (Higuchi FD ' + fd.toFixed(2) + (se != null ? ', sample entropy ' + se.toFixed(2) : '') + ') - a healthy, well-formed signal.' });
+        }
+      }
+      if (rr != null && rr >= 0.02) {
+        out.push({ kind: 'good', text: 'Elevated recurrence rate (' + rr.toFixed(3) + ') - the signal carried repeating, periodic structure, consistent with rhythmic entrainment.' });
+      }
+      if (nd.perChannel) {
+        var fds = [];
+        for (var ch in nd.perChannel) {
+          if (nd.perChannel.hasOwnProperty(ch) && nd.perChannel[ch] && nd.perChannel[ch].higuchiFD != null) {
+            fds.push({ c: ch, v: nd.perChannel[ch].higuchiFD });
+          }
+        }
+        if (fds.length >= 2) {
+          fds.sort(function (a, b) { return a.v - b.v; });
+          var lo = fds[0], hi = fds[fds.length - 1];
+          if (hi.v - lo.v >= 0.25) {
+            out.push({ kind: 'watch', text: 'Complexity varied across channels (' + lo.c + ' lowest at ' + lo.v.toFixed(2) + ', ' + hi.c + ' highest at ' + hi.v.toFixed(2) + ') - a wide gap can mean uneven electrode contact.' });
+          }
+        }
+      }
+    }
+
+    // ── Channel quality caveat (v2.1 exports) ──
+    var cd = diagnostics && diagnostics.channelDiagnostic;
+    if (cd && cd.stats) {
+      var noisy = [];
+      var scalp = ['TP9', 'AF7', 'AF8', 'TP10'];
+      for (var si = 0; si < scalp.length; si++) {
+        var st = cd.stats[scalp[si]];
+        if (st && st.spectrum && st.spectrum.eegLike === false) noisy.push(scalp[si]);
+      }
+      if (noisy.length) {
+        out.push({ kind: 'watch', text: noisy.join(' and ') + ' looked more like noise than clean EEG this session - interpret ' + (noisy.length > 1 ? 'their' : 'its') + ' channel metrics cautiously, and re-seat the band if it persists.' });
+      }
+    }
+
     return out;
   }
 
-  function computeSophiaSummary(snapshots) {
+  function computeSophiaSummary(snapshots, diagnostics) {
     var regimes = [];
     var geometries = [];
     var hexSet = {};
@@ -392,7 +501,7 @@
       mean_meditation:       _mean(medVals),
       spiral:                _computeSpiralSummary(snapshots)
     };
-    summary.insights = generateSophiaInsights(summary, snapshots);
+    summary.insights = generateSophiaInsights(summary, snapshots, diagnostics);
     return summary;
   }
 
@@ -468,7 +577,10 @@
     var deviceClean = (sophiaExport.device || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '_');
     var sessionId = 'sophia_' + deviceClean + '_' + firstT.replace(/[:.]/g, '-');
 
-    var summary = computeSophiaSummary(snapshots);
+    var summary = computeSophiaSummary(snapshots, {
+      neurodynamics:     sophiaExport.neurodynamics,
+      channelDiagnostic: sophiaExport.channelDiagnostic
+    });
 
     return {
       schema_version: '2.0',
@@ -495,7 +607,10 @@
         first_snapshot_at: firstT,
         last_snapshot_at:  lastT,
         snapshots:         snapshots,
-        summary:           summary
+        summary:           summary,
+        // Session-level diagnostics (v2.1 exports); null on older exports.
+        neurodynamics:     sophiaExport.neurodynamics || null,
+        channel_diagnostic: sophiaExport.channelDiagnostic || null
       },
       // Store lightweight raw_import — omit timeline (already converted to snapshots)
       raw_import: [_stripTimeline(sophiaExport)]
@@ -512,7 +627,10 @@
 
     var sd = existingRecord.source_data || {};
     var merged = mergeSnapshots(sd.snapshots || [], newSnapshots);
-    var summary = computeSophiaSummary(merged);
+    var summary = computeSophiaSummary(merged, {
+      neurodynamics:     sophiaExport.neurodynamics || sd.neurodynamics,
+      channelDiagnostic: sophiaExport.channelDiagnostic || sd.channel_diagnostic
+    });
 
     var firstT = merged.length ? merged[0].t : sd.first_snapshot_at;
     var lastT  = merged.length ? merged[merged.length - 1].t : sd.last_snapshot_at;
@@ -537,7 +655,10 @@
         first_snapshot_at: firstT,
         last_snapshot_at:  lastT,
         snapshots:         merged,
-        summary:           summary
+        summary:           summary,
+        // Latest export's session-level diagnostics; fall back to prior values.
+        neurodynamics:     sophiaExport.neurodynamics || sd.neurodynamics || null,
+        channel_diagnostic: sophiaExport.channelDiagnostic || sd.channel_diagnostic || null
       },
       raw_import: rawImport
     };
