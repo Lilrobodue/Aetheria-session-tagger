@@ -60,6 +60,7 @@ input,select,textarea{font-family:inherit}
 .badge-lab{border-color:var(--blu);color:var(--blu);background:#5048C410}
 .badge-sophia{border-color:var(--mag);color:var(--mag);background:#A840B810}
 .badge-rct{border-color:var(--pur);color:var(--pur);background:#7B50D410}
+.badge-sleep{border-color:var(--blu);color:var(--blu);background:#5048C410}
 .badge-manual{border-color:var(--gld);color:var(--gld);background:#d4a57410}
 .row-body{flex:1;min-width:0}
 .row-date{font-size:11px;color:var(--sub);margin-bottom:2px}
@@ -264,6 +265,7 @@ input[type=range]{width:100%;accent-color:var(--gld)}
 <script src="src/import/coherence-lab-import.js"></script>
 <script src="src/import/sophia-import.js"></script>
 <script src="src/import/rct-import.js"></script>
+<script src="src/import/sleep-import.js"></script>
 <script src="src/export/tagger-export.js"></script>
 <script>
 // ═══════════════════════════════════════
@@ -377,6 +379,12 @@ function autoProtocolDefaults(rec){
       if(d>0) dur=Math.round(d);
     }
     if(sum.peak_coherence!=null) coh=Math.round(sum.peak_coherence);
+  } else if(rec.source==='sleep'){
+    // Sleep exports carry their own interval classification + regime + a
+    // coherence score derived during overnight staging. Suggest all three.
+    if(sum.duration_minutes!=null) dur=Math.round(sum.duration_minutes);
+    if(sum.interval_coherence_score!=null) coh=Math.round(sum.interval_coherence_score);
+    if(sum.interval_dominant_regime) reg=sum.interval_dominant_regime;
   }
   return {duration_minutes:dur,coherence_score:coh,dominant_regime:reg,classification:cls};
 }
@@ -448,6 +456,7 @@ function renderHome(){
   if(state.lastImportSummary){
     if(state.lastImportSummary.type==='sophia') h+=renderSophiaImportSummary(state.lastImportSummary);
     else if(state.lastImportSummary.type==='rct') h+=renderRCTImportSummary(state.lastImportSummary);
+    else if(state.lastImportSummary.type==='sleep') h+=renderSleepImportSummary(state.lastImportSummary);
     else h+=renderLabImportSummary(state.lastImportSummary);
   }
   if(state.importDuplicate){
@@ -469,8 +478,8 @@ function renderHome(){
   } else {
     h+='<div class="section-title" style="margin-top:16px">History</div>';
     idx.sessions.forEach(function(entry){
-      const badge=entry.source==='coherence_lab'?'badge-lab':entry.source==='sophia'?'badge-sophia':entry.source==='rct'?'badge-rct':'badge-manual';
-      const icon=entry.source==='coherence_lab'?'\u2b21':entry.source==='sophia'?'\u{1F52E}':entry.source==='rct'?'\u{1F9E0}':'\u270F\uFE0F';
+      const badge=entry.source==='coherence_lab'?'badge-lab':entry.source==='sophia'?'badge-sophia':entry.source==='rct'?'badge-rct':entry.source==='sleep'?'badge-sleep':'badge-manual';
+      const icon=entry.source==='coherence_lab'?'\u2b21':entry.source==='sophia'?'\u{1F52E}':entry.source==='rct'?'\u{1F9E0}':entry.source==='sleep'?'\u{1F319}':'\u270F\uFE0F';
       const dateStr=fmtDate(entry.session_date);
       const summary=entry.summary_line||'Session';
       // Load mood_change from context if available
@@ -552,6 +561,7 @@ function renderDetail(sessionId){
   if(rec.source==='coherence_lab') h+=renderSourceLab(rec);
   else if(rec.source==='sophia') h+=renderSourceSophia(rec);
   else if(rec.source==='rct') h+=renderSourceRCT(rec);
+  else if(rec.source==='sleep') h+=renderSourceSleep(rec);
   else h+=renderSourceManual(rec);
   h+='</div>';
 
@@ -1074,6 +1084,77 @@ function renderSourceRCT(rec){
   return h;
 }
 
+function fmtHm(mins){
+  if(mins==null||isNaN(mins)) return '—';
+  const m=Math.round(mins);
+  return Math.floor(m/60)+'h'+String(m%60).padStart(2,'0');
+}
+
+function renderSourceSleep(rec){
+  const sd=rec.source_data||{};
+  const sum=sd.summary||{};
+  let h='<h2>Sleep Session</h2>';
+  if(sd.device) h+='<div class="src-meta">Device: <span class="sv">'+escHtml(sd.device)+'</span></div>';
+  if(sd.software_version) h+='<div class="src-meta">Software: <span class="sv">v'+escHtml(sd.software_version)+'</span></div>';
+  if(sd.start_time||sd.end_time){
+    h+='<div class="src-meta">Window: <span class="sv">'+fmtTime(sd.start_time)+(sd.end_time?' → '+fmtTime(sd.end_time):'')+'</span></div>';
+  }
+
+  h+='<div class="section-title">Sleep Overview</div>';
+  h+='<div class="metric-grid">';
+  h+=metricRow('Sleep score',sum.sleep_score!=null?sum.sleep_score:null);
+  h+=metricRow('Time in bed',sum.time_in_bed_minutes!=null?fmtHm(sum.time_in_bed_minutes):null);
+  h+=metricRow('Total sleep',sum.total_sleep_minutes!=null?fmtHm(sum.total_sleep_minutes):null);
+  h+=metricRow('Efficiency',sum.sleep_efficiency_pct!=null?sum.sleep_efficiency_pct+'%':null);
+  h+=metricRow('Awakenings',sum.awakenings!=null?sum.awakenings:null);
+  h+='</div>';
+
+  h+='<div class="section-title">Stages</div>';
+  h+='<div class="metric-grid">';
+  h+=metricRow('Deep',sum.deep_minutes!=null?fmtHm(sum.deep_minutes):null);
+  h+=metricRow('REM',sum.rem_minutes!=null?fmtHm(sum.rem_minutes):null);
+  h+=metricRow('Light',sum.light_minutes!=null?fmtHm(sum.light_minutes):null);
+  h+=metricRow('Wake',sum.wake_minutes!=null?fmtHm(sum.wake_minutes):null);
+  h+='</div>';
+
+  h+='<div class="section-title">Heart Rate</div>';
+  h+='<div class="metric-grid">';
+  h+=metricRow('Average',sum.avg_heart_rate!=null?sum.avg_heart_rate+' bpm':null);
+  h+=metricRow('Minimum',sum.min_heart_rate!=null?sum.min_heart_rate+' bpm':null);
+  h+='</div>';
+
+  if(sum.interval_classification||sum.interval_dominant_regime||sum.interval_coherence_score!=null){
+    h+='<div class="section-title">Interval Analysis</div>';
+    if(sum.interval_classification) h+='<div class="src-meta">Classification: <span class="sv">'+escHtml(sum.interval_classification)+'</span></div>';
+    if(sum.interval_dominant_regime) h+='<div class="src-meta">Dominant regime: <span class="sv">'+escHtml(sum.interval_dominant_regime)+'</span></div>';
+    if(sum.interval_coherence_score!=null) h+='<div class="src-meta">Coherence score: <span class="sv">'+sum.interval_coherence_score+'</span></div>';
+    if(sum.mean_bcs!=null) h+='<div class="src-meta">Mean BCS: <span class="sv">'+sum.mean_bcs+'</span></div>';
+  }
+
+  if(sd.staging_note){
+    h+='<div class="verdict">'+escHtml(sd.staging_note)+'</div>';
+  }
+
+  h+='<div style="margin-top:12px;font-size:10px;color:var(--dim);font-style:italic">Auto-populated from sleep export. To annotate, use the Notes field.</div>';
+  return h;
+}
+
+function renderSleepImportSummary(info){
+  const rec=info.record||{};
+  const sum=(rec.source_data&&rec.source_data.summary)||{};
+  let h='<div class="import-summary" style="border-color:var(--blu)">';
+  h+='<h3 style="color:var(--blu)">\u{1F319} Sleep session imported</h3>';
+  h+='<div class="is-line">Date: <span class="is-val">'+fmtDate(rec.session_date)+'</span></div>';
+  if(sum.sleep_score!=null) h+='<div class="is-line">Sleep score: <span class="is-val">'+sum.sleep_score+'</span></div>';
+  if(sum.total_sleep_minutes!=null) h+='<div class="is-line">Total sleep: <span class="is-val">'+fmtHm(sum.total_sleep_minutes)+'</span></div>';
+  if(sum.sleep_efficiency_pct!=null) h+='<div class="is-line">Efficiency: <span class="is-val">'+sum.sleep_efficiency_pct+'%</span></div>';
+  h+='<div class="btn-row" style="justify-content:center">';
+  h+='<button class="btn btn-sm" style="border-color:var(--blu);color:var(--blu)" onclick="nav(\'detail\',\''+escHtml(rec.session_id)+'\')">View session</button>';
+  h+='<button class="btn btn-sm" onclick="state.lastImportSummary=null;nav(\'home\')">Back to home</button>';
+  h+='</div></div>';
+  return h;
+}
+
 function renderSourceManual(rec){
   const sd=rec.source_data||{};
   let h='<h2>Manual Session</h2>';
@@ -1539,10 +1620,13 @@ window.handleFileImport=function(input){
 function importJSONText(text){
   let obj;try{obj=JSON.parse(text);}catch(e){alert("That file couldn't be read as JSON.");return;}
   if(!obj||typeof obj!=='object'){alert("That file couldn't be read as JSON.");return;}
+  // Sleep exports reuse the `session_summary_for_tagger` envelope, so they
+  // must be matched BEFORE the (looser) Coherence Lab detector.
+  if(SleepImport.detectSleepFormat(obj)){handleSleepImport(text);return;}
   if(CoherenceLabImport.detectCoherenceLabFormat(obj)!==null){importLabJSON(text);return;}
   if(SophiaImport.detectSophiaFormat(obj)){handleSophiaImport(text);return;}
   if(RCTImport.detectRCTFormat(obj)){handleRCTImport(text);return;}
-  alert("This doesn't match any known Aetheria format. Supported: Coherence Lab JSON, Sophia JSON, RCT JSON.");
+  alert("This doesn't match any known Aetheria format. Supported: Coherence Lab JSON, Sophia JSON, RCT JSON, Sleep JSON.");
 }
 
 function importLabJSON(text){
@@ -1599,6 +1683,18 @@ window.rctImportConfirm=function(){
 };
 window.rctImportCancel=function(){state.rctImport=null;render();};
 
+function handleSleepImport(text){
+  const result=SleepImport.importSleepFile(text);
+  if(result.status==='error'){alert(result.error);return;}
+  if(result.status==='duplicate'){
+    state.importDuplicate={sessionId:result.record.session_id,importedAt:result.existingRecord.imported_at,newRecord:result.record,existingRecord:result.existingRecord};
+    render();return;
+  }
+  try{TaggerStore.saveSession(result.record);}catch(e){alert(e.message);return;}
+  state.lastImportSummary={type:'sleep',record:result.record};
+  state.sophiaImport=null;state.rctImport=null;render();
+}
+
 // ─── Duplicate handlers ───
 window.dupReimport=function(){
   const dup=state.importDuplicate;if(!dup)return;
@@ -1606,7 +1702,8 @@ window.dupReimport=function(){
   if(dup.existingRecord&&dup.existingRecord.context)rec.context=dup.existingRecord.context;
   rec.imported_at=dup.existingRecord?dup.existingRecord.imported_at:rec.imported_at;
   try{TaggerStore.saveSession(rec);}catch(e){alert(e.message);return;}
-  state.lastImportSummary={summary:CoherenceLabImport.computeSessionSummary(rec),record:rec};
+  if(rec.source==='sleep') state.lastImportSummary={type:'sleep',record:rec};
+  else state.lastImportSummary={summary:CoherenceLabImport.computeSessionSummary(rec),record:rec};
   state.importDuplicate=null;render();
 };
 window.dupCancel=function(){state.importDuplicate=null;render();};

@@ -16,7 +16,7 @@
   var DB_NAME             = 'aetheria_tagger';
   var DB_VERSION          = 1;
 
-  var ALLOWED_SOURCES = ['coherence_lab', 'sophia', 'rct', 'manual'];
+  var ALLOWED_SOURCES = ['coherence_lab', 'sophia', 'rct', 'sleep', 'manual'];
 
   // ─── Internal State ───────────────────────────────────────────
 
@@ -231,6 +231,27 @@
         rParts.push(bg + ' \u2192 ' + eg + pmStr);
       }
       return rParts.join(' \u00b7 ');
+    } else if (record.source === 'sleep') {
+      var ssd = record.source_data || {};
+      var sleepSummary = ssd.summary || {};
+      var sParts = [];
+      if (typeof sleepSummary.sleep_score === 'number') {
+        sParts.push('Sleep score ' + sleepSummary.sleep_score);
+      }
+      if (typeof sleepSummary.total_sleep_minutes === 'number') {
+        var tsm = sleepSummary.total_sleep_minutes;
+        sParts.push(Math.floor(tsm / 60) + 'h' + String(tsm % 60).padStart(2, '0'));
+      }
+      if (typeof sleepSummary.sleep_efficiency_pct === 'number') {
+        sParts.push(sleepSummary.sleep_efficiency_pct + '% eff');
+      }
+      if (typeof sleepSummary.awakenings === 'number') {
+        sParts.push(sleepSummary.awakenings + ' awakening' + (sleepSummary.awakenings !== 1 ? 's' : ''));
+      }
+      if (typeof sleepSummary.avg_heart_rate === 'number') {
+        sParts.push('avg HR ' + sleepSummary.avg_heart_rate);
+      }
+      return sParts.join(' \u00b7 ');
     } else if (record.source === 'manual') {
       var ctx = record.context || {};
       var msd = record.source_data || {};
