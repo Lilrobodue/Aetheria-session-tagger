@@ -16,7 +16,7 @@
   var DB_NAME             = 'aetheria_tagger';
   var DB_VERSION          = 1;
 
-  var ALLOWED_SOURCES = ['coherence_lab', 'sophia', 'rct', 'sleep', 'manual'];
+  var ALLOWED_SOURCES = ['coherence_lab', 'sophia', 'rct', 'sleep', 'divination', 'manual'];
 
   // ─── Internal State ───────────────────────────────────────────
 
@@ -252,6 +252,29 @@
         sParts.push('avg HR ' + sleepSummary.avg_heart_rate);
       }
       return sParts.join(' \u00b7 ');
+    } else if (record.source === 'divination') {
+      var dsd = record.source_data || {};
+      var dhx = dsd.hexagrams || {};
+      var dParts = [];
+      var pres = dhx.present;
+      var chg = dhx.changed;
+      if (pres && typeof pres.hexagram === 'number') {
+        var hexLine = '\u2637 #' + pres.hexagram + (pres.hexagram_name ? ' ' + pres.hexagram_name : '');
+        if (chg && typeof chg.hexagram === 'number' && chg.hexagram !== pres.hexagram) {
+          hexLine += ' \u2192 #' + chg.hexagram + (chg.hexagram_name ? ' ' + chg.hexagram_name : '');
+        }
+        dParts.push(hexLine);
+      }
+      var mir = dsd.mirror || {};
+      if (mir.status === 'hit') dParts.push('Mirror hit');
+      else if (mir.status === 'miss') dParts.push('Mirror miss');
+      if (typeof dsd.question === 'string' && dsd.question) {
+        var q = dsd.question;
+        var cut = q.length > 48 ? q.slice(0, 48) : q;
+        if (cut !== q && /[\uD800-\uDBFF]$/.test(cut)) cut = cut.slice(0, -1);
+        dParts.push('\u201c' + cut + (cut !== q ? '\u2026' : '') + '\u201d');
+      }
+      return dParts.join(' \u00b7 ');
     } else if (record.source === 'manual') {
       var ctx = record.context || {};
       var msd = record.source_data || {};

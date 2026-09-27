@@ -1,0 +1,1205 @@
+{
+ "aetheria_export_version": "1.0",
+ "export_type": "divination_for_tagger",
+ "app": "aetheria-divination",
+ "schema_version": "2.0",
+ "exported_at": "2026-10-05T16:00:00.000Z",
+ "map_version": "9c62d517",
+ "session_count": 4,
+ "sessions": [
+  {
+   "schema_version": "2.0",
+   "session_id": "divination_b7d2c9e4-5a31-4f0e-9c6b-2e8a1d4f7a10",
+   "source": "divination",
+   "imported_at": "2026-10-05T16:00:00.000Z",
+   "last_edited_at": "2026-10-05T16:00:00.000Z",
+   "session_date": "2026-09-11",
+   "context": {
+    "condition": "",
+    "moon": "🌑 New",
+    "sleep": null,
+    "mood_before": null,
+    "mood_after": null,
+    "mood_change": null,
+    "pain": null,
+    "activity": "",
+    "notes": "Question: “Should we build the web prototype first?”\nThe Moment: 36 Darkening of the Light → 24 Return.\nHonest Mirror: the reading fit what happened.\nNote: We waited, and it came right.",
+    "walk_type": "",
+    "dominant_regime": "",
+    "duration_minutes": null,
+    "coherence_score": null,
+    "classification": ""
+   },
+   "source_data": {
+    "description": "The Moment: 36 Darkening of the Light → 24 Return · “Should we build the web prototype first?”",
+    "app": "aetheria-divination",
+    "entry_version": 1,
+    "reading_id": "b7d2c9e4-5a31-4f0e-9c6b-2e8a1d4f7a10",
+    "map_version": "9c62d517",
+    "asked_at": "2026-09-12T02:40:00.000Z",
+    "asked_at_ms": 1789180800000,
+    "clock_offset_minutes": -360,
+    "question": "Should we build the web prototype first?",
+    "method": "moment",
+    "method_name": "The Moment",
+    "inputs": {
+     "utcMs": 1789180800000,
+     "hourMode": "sun",
+     "clockOffsetMinutes": -360
+    },
+    "cast": {
+     "present": 36,
+     "nuclear": 40,
+     "changed": 24,
+     "moving_lines": [
+      3
+     ],
+     "line_values": [
+      7,
+      8,
+      9,
+      8,
+      8,
+      8
+     ],
+     "bits": "101000",
+     "upper": "kun",
+     "lower": "li",
+     "body": "kun",
+     "use": "li"
+    },
+    "hexagrams": {
+     "present": {
+      "hexagram": 36,
+      "hexagram_name": "Darkening of the Light"
+     },
+     "nuclear": {
+      "hexagram": 40,
+      "hexagram_name": "Deliverance"
+     },
+     "changed": {
+      "hexagram": 24,
+      "hexagram_name": "Return"
+     }
+    },
+    "journey": [
+     {
+      "role": "present",
+      "hexagram": 36,
+      "hexagram_name": "Darkening of the Light",
+      "frequency_hz": 2178,
+      "script": "The Source",
+      "regime": "HEART",
+      "position": 14
+     },
+     {
+      "role": "process",
+      "hexagram": 40,
+      "hexagram_name": "Deliverance",
+      "frequency_hz": 396,
+      "script": "The Storm",
+      "regime": "GUT",
+      "position": 3
+     },
+     {
+      "role": "outcome",
+      "hexagram": 24,
+      "hexagram_name": "Return",
+      "frequency_hz": 639,
+      "script": "The Root",
+      "regime": "GUT",
+      "position": 6
+     }
+    ],
+    "journey_hz": [
+     2178,
+     396,
+     639
+    ],
+    "source_tone": {
+     "frequency_hz": 2178,
+     "script": "The Source"
+    },
+    "verdict": {
+     "body": "kun",
+     "use": "li",
+     "now": "support",
+     "process": [
+      "effort",
+      "pressure"
+     ],
+     "outcome": "pressure",
+     "trigrams": {
+      "now": "li",
+      "process": [
+       "kan",
+       "zhen"
+      ],
+      "outcome": "zhen"
+     },
+     "season": {
+      "element": "Metal",
+      "body": "resting",
+      "use": "confined"
+     }
+    },
+    "sky": {
+     "mansion": 12,
+     "mansion_name": "Uttara Phalguni",
+     "pada": 4,
+     "illumination": 0.011295052726828458,
+     "elongation_deg": 12.201626582419863,
+     "lunar_day": 2,
+     "waxing": true,
+     "phase_name": "New moon",
+     "sky_hexagram": 34,
+     "sky_hexagram_name": "Power of the Great",
+     "sky_frequency_hz": 1692,
+     "sky_script": "The Edge",
+     "sky_regime": "HEART",
+     "solar_month": {
+      "name": "Rooster",
+      "number": 10,
+      "season_element": "Metal"
+     },
+     "tide": {
+      "branch": "Rooster",
+      "hexagram": 20,
+      "hexagram_name": "Contemplation",
+      "frequency_hz": 1935,
+      "script": "The Lighthouse"
+     },
+     "heaven_earth": {
+      "distance": 2,
+      "mark": false
+     }
+    },
+    "mirror": {
+     "status": "hit",
+     "picked_real": true,
+     "answered_at": "2026-09-20T02:40:00.000Z",
+     "note": "We waited, and it came right."
+    }
+   },
+   "raw_import": {
+    "v": 1,
+    "id": "b7d2c9e4-5a31-4f0e-9c6b-2e8a1d4f7a10",
+    "askedAt": 1789180800000,
+    "question": "Should we build the web prototype first?",
+    "method": "moment",
+    "inputs": {
+     "utcMs": 1789180800000,
+     "lat": null,
+     "lon": null,
+     "hourMode": "sun",
+     "clockOffsetMinutes": -360
+    },
+    "cast": {
+     "method": "moment",
+     "inputs": {
+      "utcMs": 1789180800000,
+      "lat": null,
+      "lon": null,
+      "hourMode": "sun",
+      "clockOffsetMinutes": -360
+     },
+     "working": {
+      "sum": 16,
+      "sumWithHour": 27,
+      "upperNumber": 8,
+      "lowerNumber": 3,
+      "movingLine": 3,
+      "numbers": {
+       "year": 7,
+       "month": 8,
+       "day": 1,
+       "hour": 11
+      }
+     },
+     "lineValues": [
+      7,
+      8,
+      9,
+      8,
+      8,
+      8
+     ],
+     "bits": "101000",
+     "present": 36,
+     "movingLines": [
+      3
+     ],
+     "changed": 24,
+     "nuclear": 40,
+     "upper": "kun",
+     "lower": "li",
+     "body": "kun",
+     "use": "li",
+     "moment": {
+      "hourMode": "sun",
+      "localDate": "2026-09-11",
+      "localTime": null,
+      "calendarDate": "2026-09-11",
+      "rollover": false,
+      "hour": 11,
+      "hourBranch": "Dog",
+      "lunar": {
+       "year": 2026,
+       "yearBranch": "Horse",
+       "yearBranchNumber": 7,
+       "month": 8,
+       "leap": false,
+       "day": 1
+      }
+     },
+     "hourKey": "2026-08-01-11"
+    },
+    "sky": {
+     "utcMs": 1789180800000,
+     "sunLongitude": 169.37249003066188,
+     "moonLongitude": 181.57411661308174,
+     "elongation": 12.201626582419863,
+     "illumination": 0.011295052726828458,
+     "lunarDay": 2,
+     "waxing": true,
+     "ayanamsa": 24.229909522819643,
+     "moonSidereal": 157.3442070902621,
+     "mansion": 12,
+     "mansionName": "Uttara Phalguni",
+     "pada": 4,
+     "skyHz": 1692,
+     "skyScript": "The Edge",
+     "skyRegime": "HEART",
+     "skyHexagram": 34,
+     "solarMonth": {
+      "index": 9,
+      "number": 10,
+      "name": "Rooster",
+      "chinese": "酉",
+      "seasonElement": "Metal"
+     },
+     "tide": {
+      "branch": "Rooster",
+      "hexagram": 20,
+      "hz": 1935,
+      "script": "The Lighthouse"
+     },
+     "heavenEarth": {
+      "distance": 2,
+      "mark": false
+     }
+    },
+    "clockOffsetMinutes": -360,
+    "journey": [
+     {
+      "role": "present",
+      "hexagram": 36,
+      "hz": 2178,
+      "script": "The Source",
+      "regime": "HEART",
+      "position": 14
+     },
+     {
+      "role": "process",
+      "hexagram": 40,
+      "hz": 396,
+      "script": "The Storm",
+      "regime": "GUT",
+      "position": 3
+     },
+     {
+      "role": "outcome",
+      "hexagram": 24,
+      "hz": 639,
+      "script": "The Root",
+      "regime": "GUT",
+      "position": 6
+     }
+    ],
+    "mapVersion": "9c62d517",
+    "mirror": {
+     "pickedReal": true,
+     "realFirst": true,
+     "answeredAt": 1789872000000,
+     "note": "We waited, and it came right."
+    },
+    "hourSource": {
+     "hourMode": "sun",
+     "localTime": null,
+     "localDate": "2026-09-11"
+    }
+   }
+  },
+  {
+   "schema_version": "2.0",
+   "session_id": "divination_0f3a9b21-8c44-4d7e-a1f5-6b2c9e8d3a47",
+   "source": "divination",
+   "imported_at": "2026-10-05T16:00:00.000Z",
+   "last_edited_at": "2026-10-05T16:00:00.000Z",
+   "session_date": "2026-09-14",
+   "context": {
+    "condition": "",
+    "moon": "🌒 Waxing Crescent",
+    "sleep": null,
+    "mood_before": null,
+    "mood_after": null,
+    "mood_change": null,
+    "pain": null,
+    "activity": "",
+    "notes": "Coins: 29 The Abysmal.\nHonest Mirror: the other reading fit better.",
+    "walk_type": "",
+    "dominant_regime": "",
+    "duration_minutes": null,
+    "coherence_score": null,
+    "classification": ""
+   },
+   "source_data": {
+    "description": "Coins: 29 The Abysmal",
+    "app": "aetheria-divination",
+    "entry_version": 1,
+    "reading_id": "0f3a9b21-8c44-4d7e-a1f5-6b2c9e8d3a47",
+    "map_version": "9c62d517",
+    "asked_at": "2026-09-14T15:05:00.000Z",
+    "asked_at_ms": 1789398300000,
+    "clock_offset_minutes": -360,
+    "question": "",
+    "method": "coins",
+    "method_name": "Coins",
+    "inputs": {},
+    "cast": {
+     "present": 29,
+     "nuclear": 27,
+     "changed": 29,
+     "moving_lines": [],
+     "line_values": [
+      8,
+      7,
+      8,
+      8,
+      7,
+      8
+     ],
+     "bits": "010010",
+     "upper": "kan",
+     "lower": "kan"
+    },
+    "hexagrams": {
+     "present": {
+      "hexagram": 29,
+      "hexagram_name": "The Abysmal"
+     },
+     "nuclear": {
+      "hexagram": 27,
+      "hexagram_name": "Nourishment"
+     },
+     "changed": {
+      "hexagram": 29,
+      "hexagram_name": "The Abysmal"
+     }
+    },
+    "journey": [
+     {
+      "role": "present",
+      "hexagram": 29,
+      "hexagram_name": "The Abysmal",
+      "frequency_hz": 1206,
+      "script": "The River",
+      "regime": "HEART",
+      "position": 10
+     },
+     {
+      "role": "process",
+      "hexagram": 27,
+      "hexagram_name": "Nourishment",
+      "frequency_hz": 2421,
+      "script": "The Autumn",
+      "regime": "HEART",
+      "position": 15
+     },
+     {
+      "role": "outcome",
+      "hexagram": 29,
+      "hexagram_name": "The Abysmal",
+      "frequency_hz": 1206,
+      "script": "The River",
+      "regime": "HEART",
+      "position": 10
+     }
+    ],
+    "journey_hz": [
+     1206,
+     2421,
+     1206
+    ],
+    "source_tone": {
+     "frequency_hz": 2178,
+     "script": "The Source"
+    },
+    "verdict": null,
+    "sky": {
+     "mansion": 15,
+     "mansion_name": "Swati",
+     "pada": 2,
+     "illumination": 0.13195134732502922,
+     "elongation_deg": 42.599981527380805,
+     "lunar_day": 4,
+     "waxing": true,
+     "phase_name": "Waxing crescent",
+     "sky_hexagram": 23,
+     "sky_hexagram_name": "Splitting Apart",
+     "sky_frequency_hz": 2421,
+     "sky_script": "The Autumn",
+     "sky_regime": "HEART",
+     "solar_month": {
+      "name": "Rooster",
+      "number": 10,
+      "season_element": "Metal"
+     },
+     "tide": {
+      "branch": "Rooster",
+      "hexagram": 20,
+      "hexagram_name": "Contemplation",
+      "frequency_hz": 1935,
+      "script": "The Lighthouse"
+     },
+     "heaven_earth": {
+      "distance": 3,
+      "mark": false
+     }
+    },
+    "mirror": {
+     "status": "miss",
+     "picked_real": false,
+     "answered_at": "2026-09-22T15:05:00.000Z",
+     "note": ""
+    }
+   },
+   "raw_import": {
+    "v": 1,
+    "id": "0f3a9b21-8c44-4d7e-a1f5-6b2c9e8d3a47",
+    "askedAt": 1789398300000,
+    "question": "",
+    "method": "coins",
+    "inputs": {},
+    "cast": {
+     "method": "coins",
+     "inputs": {},
+     "working": {
+      "coins": [
+       [
+        3,
+        3,
+        2
+       ],
+       [
+        2,
+        2,
+        3
+       ],
+       [
+        3,
+        3,
+        2
+       ],
+       [
+        2,
+        3,
+        3
+       ],
+       [
+        2,
+        2,
+        3
+       ],
+       [
+        3,
+        3,
+        2
+       ]
+      ]
+     },
+     "lineValues": [
+      8,
+      7,
+      8,
+      8,
+      7,
+      8
+     ],
+     "bits": "010010",
+     "present": 29,
+     "movingLines": [],
+     "changed": 29,
+     "nuclear": 27,
+     "upper": "kan",
+     "lower": "kan"
+    },
+    "sky": {
+     "utcMs": 1789398300000,
+     "sunLongitude": 171.82360740583977,
+     "moonLongitude": 214.42358893322057,
+     "elongation": 42.599981527380805,
+     "illumination": 0.13195134732502922,
+     "lunarDay": 4,
+     "waxing": true,
+     "ayanamsa": 24.230005798624305,
+     "moonSidereal": 190.19358313459634,
+     "mansion": 15,
+     "mansionName": "Swati",
+     "pada": 2,
+     "skyHz": 2421,
+     "skyScript": "The Autumn",
+     "skyRegime": "HEART",
+     "skyHexagram": 23,
+     "solarMonth": {
+      "index": 9,
+      "number": 10,
+      "name": "Rooster",
+      "chinese": "酉",
+      "seasonElement": "Metal"
+     },
+     "tide": {
+      "branch": "Rooster",
+      "hexagram": 20,
+      "hz": 1935,
+      "script": "The Lighthouse"
+     },
+     "heavenEarth": {
+      "distance": 3,
+      "mark": false
+     }
+    },
+    "clockOffsetMinutes": -360,
+    "journey": [
+     {
+      "role": "present",
+      "hexagram": 29,
+      "hz": 1206,
+      "script": "The River",
+      "regime": "HEART",
+      "position": 10
+     },
+     {
+      "role": "process",
+      "hexagram": 27,
+      "hz": 2421,
+      "script": "The Autumn",
+      "regime": "HEART",
+      "position": 15
+     },
+     {
+      "role": "outcome",
+      "hexagram": 29,
+      "hz": 1206,
+      "script": "The River",
+      "regime": "HEART",
+      "position": 10
+     }
+    ],
+    "mapVersion": "9c62d517",
+    "mirror": {
+     "pickedReal": false,
+     "realFirst": false,
+     "answeredAt": 1790089500000
+    }
+   }
+  },
+  {
+   "schema_version": "2.0",
+   "session_id": "divination_5e8d1c77-2b90-4a36-8f14-c3a7e0b92d58",
+   "source": "divination",
+   "imported_at": "2026-10-05T16:00:00.000Z",
+   "last_edited_at": "2026-10-05T16:00:00.000Z",
+   "session_date": "2026-09-18",
+   "context": {
+    "condition": "",
+    "moon": "🌓 First Quarter",
+    "sleep": null,
+    "mood_before": null,
+    "mood_after": null,
+    "mood_change": null,
+    "pain": null,
+    "activity": "",
+    "notes": "Question: “What does the morning ask of me?”\nHeart Yarrow: 40 Deliverance → 32 Duration.\nHonest Mirror: the reading fit what happened.\nNote: Quiet and steady, as it said.",
+    "walk_type": "",
+    "dominant_regime": "",
+    "duration_minutes": null,
+    "coherence_score": null,
+    "classification": ""
+   },
+   "source_data": {
+    "description": "Heart Yarrow: 40 Deliverance → 32 Duration · “What does the morning ask of me?”",
+    "app": "aetheria-divination",
+    "entry_version": 1,
+    "reading_id": "5e8d1c77-2b90-4a36-8f14-c3a7e0b92d58",
+    "map_version": "9c62d517",
+    "asked_at": "2026-09-18T13:30:00.000Z",
+    "asked_at_ms": 1789738200000,
+    "clock_offset_minutes": -360,
+    "question": "What does the morning ask of me?",
+    "method": "heart-yarrow",
+    "method_name": "Heart Yarrow",
+    "inputs": {
+     "nonceHex": "0b30557a9fc4e90e33587da2c7ec1136"
+    },
+    "cast": {
+     "present": 40,
+     "nuclear": 63,
+     "changed": 32,
+     "moving_lines": [
+      3
+     ],
+     "line_values": [
+      8,
+      7,
+      6,
+      7,
+      8,
+      8
+     ],
+     "bits": "010100",
+     "upper": "zhen",
+     "lower": "kan"
+    },
+    "hexagrams": {
+     "present": {
+      "hexagram": 40,
+      "hexagram_name": "Deliverance"
+     },
+     "nuclear": {
+      "hexagram": 63,
+      "hexagram_name": "After Completion"
+     },
+     "changed": {
+      "hexagram": 32,
+      "hexagram_name": "Duration"
+     }
+    },
+    "journey": [
+     {
+      "role": "present",
+      "hexagram": 40,
+      "hexagram_name": "Deliverance",
+      "frequency_hz": 396,
+      "script": "The Storm",
+      "regime": "GUT",
+      "position": 3
+     },
+     {
+      "role": "process",
+      "hexagram": 63,
+      "hexagram_name": "After Completion",
+      "frequency_hz": 2907,
+      "script": "The Dawn",
+      "regime": "HEART",
+      "position": 17
+     },
+     {
+      "role": "outcome",
+      "hexagram": 32,
+      "hexagram_name": "Duration",
+      "frequency_hz": 1692,
+      "script": "The Edge",
+      "regime": "HEART",
+      "position": 12
+     }
+    ],
+    "journey_hz": [
+     396,
+     2907,
+     1692
+    ],
+    "source_tone": {
+     "frequency_hz": 2178,
+     "script": "The Source"
+    },
+    "verdict": null,
+    "sky": {
+     "mansion": 18,
+     "mansion_name": "Jyeshtha",
+     "pada": 4,
+     "illumination": 0.4713721229012796,
+     "elongation_deg": 86.71769190768225,
+     "lunar_day": 8,
+     "waxing": true,
+     "phase_name": "First quarter",
+     "sky_hexagram": 46,
+     "sky_hexagram_name": "Pushing Upward",
+     "sky_frequency_hz": 3150,
+     "sky_script": "The Garden",
+     "sky_regime": "HEART",
+     "solar_month": {
+      "name": "Rooster",
+      "number": 10,
+      "season_element": "Metal"
+     },
+     "tide": {
+      "branch": "Rooster",
+      "hexagram": 20,
+      "hexagram_name": "Contemplation",
+      "frequency_hz": 1935,
+      "script": "The Lighthouse"
+     },
+     "heaven_earth": {
+      "distance": 2,
+      "mark": false
+     }
+    },
+    "mirror": {
+     "status": "hit",
+     "picked_real": true,
+     "answered_at": "2026-09-26T13:30:00.000Z",
+     "note": "Quiet and steady, as it said."
+    }
+   },
+   "raw_import": {
+    "v": 1,
+    "id": "5e8d1c77-2b90-4a36-8f14-c3a7e0b92d58",
+    "askedAt": 1789738200000,
+    "question": "What does the morning ask of me?",
+    "method": "heart-yarrow",
+    "inputs": {
+     "nonceHex": "0b30557a9fc4e90e33587da2c7ec1136"
+    },
+    "cast": {
+     "method": "heart-yarrow",
+     "inputs": {
+      "nonceHex": "0b30557a9fc4e90e33587da2c7ec1136"
+     },
+     "working": {
+      "changes": [
+       [
+        3,
+        2,
+        3
+       ],
+       [
+        2,
+        3,
+        2
+       ],
+       [
+        2,
+        2,
+        2
+       ],
+       [
+        3,
+        2,
+        2
+       ],
+       [
+        3,
+        2,
+        3
+       ],
+       [
+        3,
+        2,
+        3
+       ]
+      ]
+     },
+     "lineValues": [
+      8,
+      7,
+      6,
+      7,
+      8,
+      8
+     ],
+     "bits": "010100",
+     "present": 40,
+     "movingLines": [
+      3
+     ],
+     "changed": 32,
+     "nuclear": 63,
+     "upper": "zhen",
+     "lower": "kan"
+    },
+    "sky": {
+     "utcMs": 1789738200000,
+     "sunLongitude": 175.66015000697325,
+     "moonLongitude": 262.3778419146555,
+     "elongation": 86.71769190768225,
+     "illumination": 0.4713721229012796,
+     "lunarDay": 8,
+     "waxing": true,
+     "ayanamsa": 24.23015625446802,
+     "moonSidereal": 238.14768566018745,
+     "mansion": 18,
+     "mansionName": "Jyeshtha",
+     "pada": 4,
+     "skyHz": 3150,
+     "skyScript": "The Garden",
+     "skyRegime": "HEART",
+     "skyHexagram": 46,
+     "solarMonth": {
+      "index": 9,
+      "number": 10,
+      "name": "Rooster",
+      "chinese": "酉",
+      "seasonElement": "Metal"
+     },
+     "tide": {
+      "branch": "Rooster",
+      "hexagram": 20,
+      "hz": 1935,
+      "script": "The Lighthouse"
+     },
+     "heavenEarth": {
+      "distance": 2,
+      "mark": false
+     }
+    },
+    "clockOffsetMinutes": -360,
+    "journey": [
+     {
+      "role": "present",
+      "hexagram": 40,
+      "hz": 396,
+      "script": "The Storm",
+      "regime": "GUT",
+      "position": 3
+     },
+     {
+      "role": "process",
+      "hexagram": 63,
+      "hz": 2907,
+      "script": "The Dawn",
+      "regime": "HEART",
+      "position": 17
+     },
+     {
+      "role": "outcome",
+      "hexagram": 32,
+      "hz": 1692,
+      "script": "The Edge",
+      "regime": "HEART",
+      "position": 12
+     }
+    ],
+    "mapVersion": "9c62d517",
+    "mirror": {
+     "pickedReal": true,
+     "realFirst": true,
+     "answeredAt": 1790429400000,
+     "note": "Quiet and steady, as it said."
+    }
+   }
+  },
+  {
+   "schema_version": "2.0",
+   "session_id": "divination_a41c6f08-93d2-47b5-b8e0-7d15f2c4e9a3",
+   "source": "divination",
+   "imported_at": "2026-10-05T16:00:00.000Z",
+   "last_edited_at": "2026-10-05T16:00:00.000Z",
+   "session_date": "2026-09-19",
+   "context": {
+    "condition": "",
+    "moon": "🌓 First Quarter",
+    "sleep": null,
+    "mood_before": null,
+    "mood_after": null,
+    "mood_change": null,
+    "pain": null,
+    "activity": "",
+    "notes": "Question: “How should I approach the new work with others?”\nThe Question: 17 Following → 58 The Joyous.\nHonest Mirror: the other reading fit better.\nNote: The other one described the week better.",
+    "walk_type": "",
+    "dominant_regime": "",
+    "duration_minutes": null,
+    "coherence_score": null,
+    "classification": ""
+   },
+   "source_data": {
+    "description": "The Question: 17 Following → 58 The Joyous · “How should I approach the new work with others?”",
+    "app": "aetheria-divination",
+    "entry_version": 1,
+    "reading_id": "a41c6f08-93d2-47b5-b8e0-7d15f2c4e9a3",
+    "map_version": "9c62d517",
+    "asked_at": "2026-09-20T05:10:00.000Z",
+    "asked_at_ms": 1789881000000,
+    "clock_offset_minutes": -360,
+    "question": "How should I approach the new work with others?",
+    "method": "question",
+    "method_name": "The Question",
+    "inputs": {
+     "question": "How should I approach the new work with others?",
+     "hour": 12
+    },
+    "cast": {
+     "present": 17,
+     "nuclear": 53,
+     "changed": 58,
+     "moving_lines": [
+      2
+     ],
+     "line_values": [
+      7,
+      6,
+      8,
+      7,
+      7,
+      8
+     ],
+     "bits": "100110",
+     "upper": "dui",
+     "lower": "zhen",
+     "body": "dui",
+     "use": "zhen"
+    },
+    "hexagrams": {
+     "present": {
+      "hexagram": 17,
+      "hexagram_name": "Following"
+     },
+     "nuclear": {
+      "hexagram": 53,
+      "hexagram_name": "Development"
+     },
+     "changed": {
+      "hexagram": 58,
+      "hexagram_name": "The Joyous"
+     }
+    },
+    "journey": [
+     {
+      "role": "present",
+      "hexagram": 17,
+      "hexagram_name": "Following",
+      "frequency_hz": 4566,
+      "script": "The Chorus",
+      "regime": "HEAD",
+      "position": 22
+     },
+     {
+      "role": "process",
+      "hexagram": 53,
+      "hexagram_name": "Development",
+      "frequency_hz": 417,
+      "script": "The Gate",
+      "regime": "GUT",
+      "position": 4
+     },
+     {
+      "role": "outcome",
+      "hexagram": 58,
+      "hexagram_name": "The Joyous",
+      "frequency_hz": 4212,
+      "script": "The Signal",
+      "regime": "HEAD",
+      "position": 21
+     }
+    ],
+    "journey_hz": [
+     4566,
+     417,
+     4212
+    ],
+    "source_tone": {
+     "frequency_hz": 2178,
+     "script": "The Source"
+    },
+    "verdict": {
+     "body": "dui",
+     "use": "zhen",
+     "now": "effort",
+     "process": [
+      "support",
+      "effort"
+     ],
+     "outcome": "harmony",
+     "trigrams": {
+      "now": "zhen",
+      "process": [
+       "gen",
+       "xun"
+      ],
+      "outcome": "dui"
+     },
+     "season": {
+      "element": "Metal",
+      "body": "strong",
+      "use": "spent"
+     }
+    },
+    "sky": {
+     "mansion": 20,
+     "mansion_name": "Purva Ashadha",
+     "pada": 2,
+     "illumination": 0.6270666856825715,
+     "elongation_deg": 104.72223941174389,
+     "lunar_day": 9,
+     "waxing": true,
+     "phase_name": "First quarter",
+     "sky_hexagram": 48,
+     "sky_hexagram_name": "The Well",
+     "sky_frequency_hz": 3858,
+     "sky_script": "The Receiver",
+     "sky_regime": "HEAD",
+     "solar_month": {
+      "name": "Rooster",
+      "number": 10,
+      "season_element": "Metal"
+     },
+     "tide": {
+      "branch": "Rooster",
+      "hexagram": 20,
+      "hexagram_name": "Contemplation",
+      "frequency_hz": 1935,
+      "script": "The Lighthouse"
+     },
+     "heaven_earth": {
+      "distance": 4,
+      "mark": false
+     }
+    },
+    "mirror": {
+     "status": "miss",
+     "picked_real": false,
+     "answered_at": "2026-09-28T05:10:00.000Z",
+     "note": "The other one described the week better."
+    }
+   },
+   "raw_import": {
+    "v": 1,
+    "id": "a41c6f08-93d2-47b5-b8e0-7d15f2c4e9a3",
+    "askedAt": 1789881000000,
+    "question": "How should I approach the new work with others?",
+    "method": "question",
+    "inputs": {
+     "question": "How should I approach the new work with others?",
+     "hour": 12
+    },
+    "cast": {
+     "method": "question",
+     "inputs": {
+      "question": "How should I approach the new work with others?",
+      "hour": 12
+     },
+     "working": {
+      "tokens": [
+       "How",
+       "should",
+       "I",
+       "approach",
+       "the",
+       "new",
+       "work",
+       "with",
+       "others?"
+      ],
+      "upperTokens": [
+       "How",
+       "should",
+       "I",
+       "approach"
+      ],
+      "lowerTokens": [
+       "the",
+       "new",
+       "work",
+       "with",
+       "others?"
+      ],
+      "upperLetters": 18,
+      "lowerLetters": 20,
+      "totalLetters": 38,
+      "upperNumber": 2,
+      "lowerNumber": 4,
+      "movingLine": 2
+     },
+     "lineValues": [
+      7,
+      6,
+      8,
+      7,
+      7,
+      8
+     ],
+     "bits": "100110",
+     "present": 17,
+     "movingLines": [
+      2
+     ],
+     "changed": 58,
+     "nuclear": 53,
+     "upper": "dui",
+     "lower": "zhen",
+     "body": "dui",
+     "use": "zhen"
+    },
+    "sky": {
+     "utcMs": 1789881000000,
+     "sunLongitude": 177.2740864256125,
+     "moonLongitude": 281.9963258373564,
+     "elongation": 104.72223941174389,
+     "illumination": 0.6270666856825715,
+     "lunarDay": 9,
+     "waxing": true,
+     "ayanamsa": 24.230219464513574,
+     "moonSidereal": 257.76610637284284,
+     "mansion": 20,
+     "mansionName": "Purva Ashadha",
+     "pada": 2,
+     "skyHz": 3858,
+     "skyScript": "The Receiver",
+     "skyRegime": "HEAD",
+     "skyHexagram": 48,
+     "solarMonth": {
+      "index": 9,
+      "number": 10,
+      "name": "Rooster",
+      "chinese": "酉",
+      "seasonElement": "Metal"
+     },
+     "tide": {
+      "branch": "Rooster",
+      "hexagram": 20,
+      "hz": 1935,
+      "script": "The Lighthouse"
+     },
+     "heavenEarth": {
+      "distance": 4,
+      "mark": false
+     }
+    },
+    "clockOffsetMinutes": -360,
+    "journey": [
+     {
+      "role": "present",
+      "hexagram": 17,
+      "hz": 4566,
+      "script": "The Chorus",
+      "regime": "HEAD",
+      "position": 22
+     },
+     {
+      "role": "process",
+      "hexagram": 53,
+      "hz": 417,
+      "script": "The Gate",
+      "regime": "GUT",
+      "position": 4
+     },
+     {
+      "role": "outcome",
+      "hexagram": 58,
+      "hz": 4212,
+      "script": "The Signal",
+      "regime": "HEAD",
+      "position": 21
+     }
+    ],
+    "mapVersion": "9c62d517",
+    "mirror": {
+     "pickedReal": false,
+     "realFirst": false,
+     "answeredAt": 1790572200000,
+     "note": "The other one described the week better."
+    }
+   }
+  }
+ ]
+}
