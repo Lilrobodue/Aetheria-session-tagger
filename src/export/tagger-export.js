@@ -276,6 +276,52 @@
     return _buildCsv(RCT_HEADERS, rows);
   }
 
+  // ─── Divination CSV ───────────────────────────────────────────
+
+  var DIVINATION_HEADERS = [
+    'session_id', 'session_date', 'imported_at'
+  ].concat(CTX_HEADERS).concat([
+    'reading_id', 'asked_at', 'method', 'question',
+    'present', 'present_name', 'moving_lines', 'nuclear', 'nuclear_name', 'changed', 'changed_name',
+    'mirror', 'mirror_answered_at', 'mirror_note',
+    'journey_hz', 'map_version',
+    'moon_phase', 'moon_illumination', 'lunar_day', 'mansion', 'mansion_name',
+    'sky_hexagram', 'sky_hexagram_name', 'sky_frequency_hz',
+    'tide_hexagram', 'tide_frequency_hz', 'season_element',
+    'verdict_now', 'verdict_outcome'
+  ]);
+
+  function exportDivinationCSV(sessions) {
+    var rows = [];
+    for (var i = 0; i < sessions.length; i++) {
+      var r = sessions[i];
+      var sd = r.source_data || {};
+      var hx = sd.hexagrams || {};
+      var pr = hx.present || {};
+      var nu = hx.nuclear || {};
+      var ch = hx.changed || {};
+      var cast = sd.cast || {};
+      var mir = sd.mirror || {};
+      var sky = sd.sky || {};
+      var tide = sky.tide || {};
+      var sm = sky.solar_month || {};
+      var vd = sd.verdict || {};
+      rows.push([
+        r.session_id, r.session_date, r.imported_at
+      ].concat(_ctxRow(r)).concat([
+        sd.reading_id, sd.asked_at, sd.method, sd.question,
+        pr.hexagram, pr.hexagram_name, cast.moving_lines, nu.hexagram, nu.hexagram_name, ch.hexagram, ch.hexagram_name,
+        mir.status, mir.answered_at, mir.note,
+        sd.journey_hz, sd.map_version,
+        sky.phase_name, sky.illumination, sky.lunar_day, sky.mansion, sky.mansion_name,
+        sky.sky_hexagram, sky.sky_hexagram_name, sky.sky_frequency_hz,
+        tide.hexagram, tide.frequency_hz, sm.season_element,
+        vd.now, vd.outcome
+      ]));
+    }
+    return _buildCsv(DIVINATION_HEADERS, rows);
+  }
+
   // ─── Manual CSV ───────────────────────────────────────────────
 
   var MANUAL_HEADERS = [
@@ -327,7 +373,10 @@
     'rct_endstate_freq', 'rct_endstate_geometry',
     'rct_positions_moved', 'rct_prescriptions_count', 'rct_prescriptions_freqs',
     // Manual columns
-    'manual_description'
+    'manual_description',
+    // Divination columns
+    'div_method', 'div_present', 'div_present_name', 'div_changed', 'div_changed_name',
+    'div_moving_lines', 'div_mirror', 'div_journey_hz', 'div_map_version'
   ]);
 
   function exportUnifiedCSV(allSessions) {
@@ -351,6 +400,12 @@
       var rctBl = isRct ? (sd.baseline || {}) : {};
       var rctEs = isRct ? (sd.endstate || {}) : {};
       var rctRx = isRct ? (sd.prescriptions_played || []) : [];
+
+      // Divination fields
+      var isDiv = r.source === 'divination';
+      var divHx = isDiv ? (sd.hexagrams || {}) : {};
+      var divPr = divHx.present || {};
+      var divCh = divHx.changed || {};
 
       rows.push([
         r.session_id, r.session_date, r.source, r.imported_at
@@ -392,7 +447,13 @@
         isRct ? sd.positions_moved : null,
         isRct ? sd.prescriptions_count : null,
         isRct ? rctRx.join(';') : null,
-        r.source === 'manual' ? (sd.description || null) : null
+        r.source === 'manual' ? (sd.description || null) : null,
+        isDiv ? sd.method : null,
+        divPr.hexagram, divPr.hexagram_name, divCh.hexagram, divCh.hexagram_name,
+        isDiv && sd.cast ? sd.cast.moving_lines : null,
+        isDiv && sd.mirror ? sd.mirror.status : null,
+        isDiv ? sd.journey_hz : null,
+        isDiv ? sd.map_version : null
       ]));
     }
     return _buildCsv(UNIFIED_HEADERS, rows);
@@ -436,6 +497,7 @@
     exportSophiaCSV:          exportSophiaCSV,
     exportSophiaSnapshotsCSV: exportSophiaSnapshotsCSV,
     exportRCTCSV:             exportRCTCSV,
+    exportDivinationCSV:      exportDivinationCSV,
     exportManualCSV:          exportManualCSV,
     exportUnifiedCSV:         exportUnifiedCSV,
     exportFullJSON:           exportFullJSON,

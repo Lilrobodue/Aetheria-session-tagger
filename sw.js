@@ -1,4 +1,4 @@
-const CACHE = 'aetheria-tagger-v19';
+const CACHE = 'aetheria-tagger-v20';
 const SHELL = [
   './',
   './index.html',
@@ -6,9 +6,13 @@ const SHELL = [
   './icons/icon-192.svg',
   './icons/icon-512.svg',
   './icons/icon-maskable.svg',
+  './interval-analysis.js',
   './src/storage/tagger-store.js',
   './src/import/coherence-lab-import.js',
   './src/import/sophia-import.js',
+  './src/import/rct-import.js',
+  './src/import/sleep-import.js',
+  './src/import/divination-import.js',
   './src/export/tagger-export.js'
 ];
 
