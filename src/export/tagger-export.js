@@ -333,7 +333,7 @@
     'duration_seconds', 'beats', 'mean_hr',
     'mean_coherence', 'peak_coherence', 'coherent_seconds',
     'mean_breaths_per_minute', 'mean_room_ut', 'room_range_ut',
-    'held_seconds', 'mean_stillness',
+    'held_seconds', 'mean_stillness', 'tone_seconds',
     'seconds_recorded', 'ecg_samples', 'description'
   ]);
 
@@ -350,7 +350,7 @@
         sum.duration_seconds, sum.beats, sum.mean_hr,
         sum.mean_coherence, sum.peak_coherence, sum.coherent_seconds,
         sum.mean_breaths_per_minute, sum.mean_room_ut, sum.room_range_ut,
-        sum.held_seconds, sum.mean_stillness,
+        sum.held_seconds, sum.mean_stillness, sum.tone_seconds,
         Array.isArray(sd.t) ? sd.t.length : null,
         Array.isArray(sd.ecg_uv) ? sd.ecg_uv.length : null,
         sd.description

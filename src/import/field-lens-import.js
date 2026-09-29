@@ -219,8 +219,16 @@
       if (clean === null) return { error: 'summary.' + k + ' is missing or out of range' };
       out[k] = clean;
     }
+    // How long Field Lens's HEART tones played: only in exports made since
+    // it had tones (older ones leave it out, and it stays null).
+    if (sm.tone_seconds === undefined || sm.tone_seconds === null) {
+      out.tone_seconds = null;
+    } else {
+      out.tone_seconds = _int(sm.tone_seconds, 0, MAX_SECONDS);
+      if (out.tone_seconds === null) return { error: 'summary.tone_seconds is out of range' };
+    }
     // counted over the once-a-second readings
-    if (out.coherent_seconds > n || out.held_seconds > n) {
+    if (out.coherent_seconds > n || out.held_seconds > n || (out.tone_seconds || 0) > n) {
       return { error: 'summary counts more seconds than the session holds' };
     }
     return { summary: out };
@@ -308,6 +316,12 @@
       seconds[key] = arr;
     }
 
+    // The HEART tone playing each second (Hz as written, 0 silent): only in
+    // exports made since Field Lens had tones; one that fails is dropped.
+    var toneHz = sd.tone_hz === undefined ? null :
+      _series(sd.tone_hz, MAX_SECONDS, function (v) { return v === 0 || (v >= 1206 && v <= 3150); });
+    if (toneHz && toneHz.length !== n) toneHz = null;
+
     // Each heartbeat: its R-R interval (ms; a strap reads up to 64 s) and
     // when it came (s from the start).
     var rrMs = _series(sd.rr_ms, MAX_BEATS, function (v) { return v >= 0 && v <= 65536; });
@@ -340,6 +354,7 @@
       room_ut:            seconds.room_ut,
       held:               seconds.held,
       still:              seconds.still,
+      tone_hz:            toneHz || [],
       rr_ms:              rrMs,
       rr_t:               rrT,
       ecg_uv:             ecg.ecg,

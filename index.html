@@ -1418,6 +1418,7 @@ function renderSourceFieldLens(rec){
   h+=metricRow('Room field, mean',flNum(sum.mean_room_ut,1,'µT'));
   h+=metricRow('Room field, range',flNum(sum.room_range_ut,2,'µT'));
   h+=metricRow('Thumbs on the plates',flMinSec(sum.held_seconds));
+  if(sum.tone_seconds) h+=metricRow('HEART tones playing',flMinSec(sum.tone_seconds));
   h+=metricRow('Mean stillness',flNum(sum.mean_stillness,2));
   h+='</div>';
 

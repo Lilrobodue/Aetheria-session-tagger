@@ -511,7 +511,7 @@ describe('importFieldLensFile — malformed files', function () {
     });
     assertEqual(r.raw_import, null);
     assertEqual(Object.keys(r.context).length, 14);
-    assertEqual(Object.keys(r.source_data.summary).length, 11);
+    assertEqual(Object.keys(r.source_data.summary).length, 12, 'the eleven, and tone_seconds');
     assertEqual(({}).polluted, undefined, 'no prototype pollution');
     assertEqual(Object.prototype.hasOwnProperty.call(r.source_data, '__proto__'), false);
   });
@@ -539,6 +539,34 @@ describe('importFieldLensFile — malformed files', function () {
     assertEqual(res.totalCount, 3);
     assertEqual(res.repeatedCount, 1);
     assertEqual(byId(res.newSessions, ID_RATE).context.notes, 'Second look.', 'newer copy wins wherever it sits');
+  });
+});
+
+describe('exports from before the tones', function () {
+
+  it('a session without tone_seconds or tone_hz still imports, with the tones unknown', function () {
+    freshEnv();
+    var old = JSON.parse(FIRST);
+    old.sessions.forEach(function (s) {
+      delete s.source_data.tone_hz;
+      delete s.source_data.summary.tone_seconds;
+    });
+    var r = importAndCommit(JSON.stringify(old));
+    assertEqual(r.res.newCount, 3);
+    var ecg = TaggerStore.loadSession(ID_ECG);
+    assertEqual(ecg.source_data.summary.tone_seconds, null);
+    assertEqual(ecg.source_data.tone_hz.length, 0);
+  });
+
+  it('a tone outside the HEART frequencies drops the tones, not the session', function () {
+    freshEnv();
+    var odd = JSON.parse(FIRST);
+    odd.sessions.forEach(function (s) {
+      if (s.session_id === ID_ECG) s.source_data.tone_hz[5] = 440;
+    });
+    var r = importAndCommit(JSON.stringify(odd));
+    assertEqual(r.res.newCount, 3);
+    assertEqual(TaggerStore.loadSession(ID_ECG).source_data.tone_hz.length, 0);
   });
 });
 
@@ -573,6 +601,10 @@ describe('re-import — merge, never duplicate', function () {
     assertEqual(JSON.stringify(TaggerStore.loadSession(ID_RATE)), rateBefore, 'the 7 min session untouched');
     var nu = TaggerStore.loadSession(ID_NEW);
     assertEqual(nu.context.coherence_score, 78);
+    assertEqual(nu.context.dominant_regime, 'HEART', 'HEART tones through most of it');
+    assertEqual(nu.source_data.summary.tone_seconds, 700);
+    assertEqual(nu.source_data.tone_hz.length, 900);
+    assertEqual(nu.source_data.tone_hz[899], 2178);
     assertEqual(nu.context.duration_minutes, 15);
     assertEqual(nu.context.notes, 'Floor, away from the desk.');
   });
