@@ -1,4 +1,4 @@
-const CACHE = 'aetheria-tagger-v20';
+const CACHE = 'aetheria-tagger-v21';
 const SHELL = [
   './',
   './index.html',
@@ -13,6 +13,7 @@ const SHELL = [
   './src/import/rct-import.js',
   './src/import/sleep-import.js',
   './src/import/divination-import.js',
+  './src/import/field-lens-import.js',
   './src/export/tagger-export.js'
 ];
 

@@ -16,7 +16,7 @@
   var DB_NAME             = 'aetheria_tagger';
   var DB_VERSION          = 1;
 
-  var ALLOWED_SOURCES = ['coherence_lab', 'sophia', 'rct', 'sleep', 'divination', 'manual'];
+  var ALLOWED_SOURCES = ['coherence_lab', 'sophia', 'rct', 'sleep', 'divination', 'field_lens', 'manual'];
 
   // ─── Internal State ───────────────────────────────────────────
 
@@ -275,6 +275,21 @@
         dParts.push('\u201c' + cut + (cut !== q ? '\u2026' : '') + '\u201d');
       }
       return dParts.join(' \u00b7 ');
+    } else if (record.source === 'field_lens') {
+      var fsd = record.source_data || {};
+      var fsum = fsd.summary || {};
+      var fParts = [];
+      var hb = fsd.heartbeat_source;
+      // a made-up heartbeat says so first, where the line is never cut off
+      if (fsd.demo === true || hb === 'demo') fParts.push('(demo)');
+      if (typeof fsum.duration_seconds === 'number') fParts.push(Math.round(fsum.duration_seconds / 60) + ' min');
+      // rounded as Field Lens rounds it (0.185 → 0.19, like its score of 19)
+      if (typeof fsum.peak_coherence === 'number') fParts.push('Peak coherence ' + (Math.round(fsum.peak_coherence * 100) / 100).toFixed(2));
+      if (typeof fsum.mean_hr === 'number') fParts.push(Math.round(fsum.mean_hr) + ' bpm');
+      if (hb === 'strap_ecg') fParts.push('strap ECG');
+      else if (hb === 'strap_rate') fParts.push('strap rate');
+      else if (hb === 'demo') fParts.push('demo heartbeat');
+      return fParts.join(' \u00b7 ');
     } else if (record.source === 'manual') {
       var ctx = record.context || {};
       var msd = record.source_data || {};

@@ -217,7 +217,7 @@ describe('exportUnifiedCSV', function () {
     var all = [makeLabRecord(), makeSophiaRecord(), makeManualRecord()];
     var csv = TaggerExport.exportUnifiedCSV(all);
     var cols = csv.split('\n')[0].split(',');
-    assertEqual(cols.length, 83, 'header columns'); // +7 spiral +4 traveling-wave sophia summary cols, +9 divination cols
+    assertEqual(cols.length, 97, 'header columns'); // +7 spiral +4 traveling-wave sophia summary cols, +9 divination cols, +14 field lens cols
   });
 
   it('should produce one row per session regardless of source', function () {

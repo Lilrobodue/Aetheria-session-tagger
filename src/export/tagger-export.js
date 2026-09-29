@@ -322,6 +322,43 @@
     return _buildCsv(DIVINATION_HEADERS, rows);
   }
 
+  // ─── Field Lens CSV ───────────────────────────────────────────
+  // One row per session: its summary. The once-a-second readings and the
+  // heartbeats themselves are in the Full JSON.
+
+  var FIELD_LENS_HEADERS = [
+    'session_id', 'session_date', 'imported_at'
+  ].concat(CTX_HEADERS).concat([
+    'heartbeat_source', 'demo', 'started_at', 'ended_at', 'utc_offset_minutes',
+    'duration_seconds', 'beats', 'mean_hr',
+    'mean_coherence', 'peak_coherence', 'coherent_seconds',
+    'mean_breaths_per_minute', 'mean_room_ut', 'room_range_ut',
+    'held_seconds', 'mean_stillness',
+    'seconds_recorded', 'ecg_samples', 'description'
+  ]);
+
+  function exportFieldLensCSV(sessions) {
+    var rows = [];
+    for (var i = 0; i < sessions.length; i++) {
+      var r = sessions[i];
+      var sd = r.source_data || {};
+      var sum = sd.summary || {};
+      rows.push([
+        r.session_id, r.session_date, r.imported_at
+      ].concat(_ctxRow(r)).concat([
+        sd.heartbeat_source, sd.demo, sd.started_at, sd.ended_at, sd.utc_offset_minutes,
+        sum.duration_seconds, sum.beats, sum.mean_hr,
+        sum.mean_coherence, sum.peak_coherence, sum.coherent_seconds,
+        sum.mean_breaths_per_minute, sum.mean_room_ut, sum.room_range_ut,
+        sum.held_seconds, sum.mean_stillness,
+        Array.isArray(sd.t) ? sd.t.length : null,
+        Array.isArray(sd.ecg_uv) ? sd.ecg_uv.length : null,
+        sd.description
+      ]));
+    }
+    return _buildCsv(FIELD_LENS_HEADERS, rows);
+  }
+
   // ─── Manual CSV ───────────────────────────────────────────────
 
   var MANUAL_HEADERS = [
@@ -376,7 +413,11 @@
     'manual_description',
     // Divination columns
     'div_method', 'div_present', 'div_present_name', 'div_changed', 'div_changed_name',
-    'div_moving_lines', 'div_mirror', 'div_journey_hz', 'div_map_version'
+    'div_moving_lines', 'div_mirror', 'div_journey_hz', 'div_map_version',
+    // Field Lens columns
+    'fl_heartbeat_source', 'fl_demo', 'fl_started_at', 'fl_duration_seconds', 'fl_beats', 'fl_mean_hr',
+    'fl_peak_coherence', 'fl_mean_coherence', 'fl_coherent_seconds', 'fl_mean_breaths_per_minute',
+    'fl_mean_room_ut', 'fl_room_range_ut', 'fl_held_seconds', 'fl_mean_stillness'
   ]);
 
   function exportUnifiedCSV(allSessions) {
@@ -406,6 +447,10 @@
       var divHx = isDiv ? (sd.hexagrams || {}) : {};
       var divPr = divHx.present || {};
       var divCh = divHx.changed || {};
+
+      // Field Lens fields
+      var isFl = r.source === 'field_lens';
+      var flSum = isFl ? (sd.summary || {}) : {};
 
       rows.push([
         r.session_id, r.session_date, r.source, r.imported_at
@@ -453,7 +498,13 @@
         isDiv && sd.cast ? sd.cast.moving_lines : null,
         isDiv && sd.mirror ? sd.mirror.status : null,
         isDiv ? sd.journey_hz : null,
-        isDiv ? sd.map_version : null
+        isDiv ? sd.map_version : null,
+        isFl ? sd.heartbeat_source : null,
+        isFl ? sd.demo : null,
+        isFl ? sd.started_at : null,
+        flSum.duration_seconds, flSum.beats, flSum.mean_hr,
+        flSum.peak_coherence, flSum.mean_coherence, flSum.coherent_seconds, flSum.mean_breaths_per_minute,
+        flSum.mean_room_ut, flSum.room_range_ut, flSum.held_seconds, flSum.mean_stillness
       ]));
     }
     return _buildCsv(UNIFIED_HEADERS, rows);
@@ -498,7 +549,8 @@
     exportSophiaSnapshotsCSV: exportSophiaSnapshotsCSV,
     exportRCTCSV:             exportRCTCSV,
     exportDivinationCSV:      exportDivinationCSV,
-    exportManualCSV:          exportManualCSV,
+    exportFieldLensCSV:       exportFieldLensCSV,
+    exportManualCSV:         exportManualCSV,
     exportUnifiedCSV:         exportUnifiedCSV,
     exportFullJSON:           exportFullJSON,
     downloadAsFile:           downloadAsFile,

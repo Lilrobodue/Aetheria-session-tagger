@@ -12,7 +12,7 @@
 <title>Aetheria — Session Tagger</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400&display=swap');
-:root{--bg:#06060c;--bg2:#0a0810;--bg3:#0f0a14;--bdr:#1a1520;--dim:#3a3030;--mut:#4a4030;--sub:#5a4a3a;--txt:#e0d8cc;--gld:#d4a574;--grn:#4A7C59;--red:#C45C5C;--pur:#7B50D4;--blu:#5048C4;--mag:#A840B8;--ora:#C47A14;--tea:#50D4B0}
+:root{--bg:#06060c;--bg2:#0a0810;--bg3:#0f0a14;--bdr:#1a1520;--dim:#3a3030;--mut:#4a4030;--sub:#5a4a3a;--txt:#e0d8cc;--gld:#d4a574;--grn:#4A7C59;--red:#C45C5C;--pur:#7B50D4;--blu:#5048C4;--mag:#A840B8;--ora:#C47A14;--tea:#50D4B0;--ros:#D46A8A}
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--txt);font-family:'Cormorant Garamond',Georgia,serif;min-height:100vh}
 .mono{font-family:'JetBrains Mono',monospace}
@@ -62,6 +62,8 @@ input,select,textarea{font-family:inherit}
 .badge-rct{border-color:var(--pur);color:var(--pur);background:#7B50D410}
 .badge-sleep{border-color:var(--blu);color:var(--blu);background:#5048C410}
 .badge-div{border-color:var(--tea);color:var(--tea);background:#50D4B010;font-size:17px}
+.badge-fl{border-color:var(--ros);color:var(--ros);background:#D46A8A10;font-size:15px}
+.badge-fl.demo{border-style:dashed;opacity:.6}
 .badge-manual{border-color:var(--gld);color:var(--gld);background:#d4a57410}
 .row-body{flex:1;min-width:0}
 .row-date{font-size:11px;color:var(--sub);margin-bottom:2px}
@@ -216,6 +218,12 @@ input[type=range]{width:100%;accent-color:var(--gld)}
 .div-mirror.hit{border-color:var(--grn);color:var(--grn);background:#4A7C5910}
 .div-mirror.miss{border-color:var(--bdr);color:var(--sub)}
 
+/* ─── Field Lens session ─── */
+.fl-demo{font-size:12px;padding:6px 8px;border-radius:6px;border:1px dashed var(--ora);color:var(--ora);background:#C47A1410;margin:4px 0 10px;line-height:1.4}
+.fl-spark{background:var(--bg3);border:1px solid var(--bdr);border-radius:6px;padding:6px 8px 4px;margin:6px 0}
+.fl-spark svg{display:block;width:100%;height:48px}
+.fl-spark-cap{display:flex;justify-content:space-between;gap:8px;font-size:9px;color:var(--dim);margin-top:3px;font-family:'JetBrains Mono',monospace}
+
 /* ─── Import dialogs ─── */
 .import-summary{background:var(--bg2);border:1px solid var(--grn);border-radius:8px;padding:14px;margin-top:10px;text-align:center}
 .import-summary h3{font-size:13px;color:var(--grn);margin-bottom:6px;font-weight:500}
@@ -278,6 +286,7 @@ input[type=range]{width:100%;accent-color:var(--gld)}
 <script src="src/import/rct-import.js"></script>
 <script src="src/import/sleep-import.js"></script>
 <script src="src/import/divination-import.js"></script>
+<script src="src/import/field-lens-import.js"></script>
 <script src="src/export/tagger-export.js"></script>
 <script>
 // ═══════════════════════════════════════
@@ -327,8 +336,9 @@ let state={
   sophiaImport:null,
   rctImport:null,
   divinationImport:null,
+  fieldLensImport:null,
   showExportModal:false,
-  exportSelection:{lab:false,sophia:false,sophiaSnaps:false,rct:false,divination:false,manual:false,unified:false,json:false},
+  exportSelection:{lab:false,sophia:false,sophiaSnaps:false,rct:false,divination:false,fieldLens:false,manual:false,unified:false,json:false},
   // Legacy data (CSV imports, old tagged sessions)
   sessions:[],
   rctSessions:[]
@@ -398,6 +408,12 @@ function autoProtocolDefaults(rec){
     if(sum.duration_minutes!=null) dur=Math.round(sum.duration_minutes);
     if(sum.interval_coherence_score!=null) coh=Math.round(sum.interval_coherence_score);
     if(sum.interval_dominant_regime) reg=sum.interval_dominant_regime;
+  } else if(rec.source==='field_lens'){
+    // Field Lens measures the length and the heart rhythm's coherence (0–1);
+    // the score is its peak ×100, as the export writes it. No regime or
+    // classification: Field Lens has no tones to analyse.
+    if(sum.duration_seconds!=null) dur=Math.round(sum.duration_seconds/60);
+    if(sum.peak_coherence!=null) coh=Math.round(sum.peak_coherence*100);
   }
   return {duration_minutes:dur,coherence_score:coh,dominant_regime:reg,classification:cls};
 }
@@ -467,10 +483,12 @@ function renderHome(){
   if(state.sophiaImport) h+=renderSophiaImportDialog(state.sophiaImport);
   if(state.rctImport) h+=renderRCTImportDialog(state.rctImport);
   if(state.divinationImport) h+=renderDivinationImportDialog(state.divinationImport);
+  if(state.fieldLensImport) h+=renderFieldLensImportDialog(state.fieldLensImport);
   if(state.lastImportSummary){
     if(state.lastImportSummary.type==='sophia') h+=renderSophiaImportSummary(state.lastImportSummary);
     else if(state.lastImportSummary.type==='rct') h+=renderRCTImportSummary(state.lastImportSummary);
     else if(state.lastImportSummary.type==='divination') h+=renderDivinationImportSummary(state.lastImportSummary);
+    else if(state.lastImportSummary.type==='field_lens') h+=renderFieldLensImportSummary(state.lastImportSummary);
     else if(state.lastImportSummary.type==='sleep') h+=renderSleepImportSummary(state.lastImportSummary);
     else h+=renderLabImportSummary(state.lastImportSummary);
   }
@@ -493,14 +511,16 @@ function renderHome(){
   } else {
     h+='<div class="section-title" style="margin-top:16px">History</div>';
     idx.sessions.forEach(function(entry){
-      const badge=entry.source==='coherence_lab'?'badge-lab':entry.source==='sophia'?'badge-sophia':entry.source==='rct'?'badge-rct':entry.source==='sleep'?'badge-sleep':entry.source==='divination'?'badge-div':'badge-manual';
-      const icon=entry.source==='coherence_lab'?'\u2b21':entry.source==='sophia'?'\u{1F52E}':entry.source==='rct'?'\u{1F9E0}':entry.source==='sleep'?'\u{1F319}':entry.source==='divination'?'\u4DCA':'\u270F\uFE0F';
+      // A Field Lens demo (made-up heartbeats) gets a dashed badge; its line starts "(demo)".
+      const flDemo=entry.source==='field_lens'&&FieldLensImport.isDemo(TaggerStore.loadSession(entry.session_id));
+      const badge=entry.source==='coherence_lab'?'badge-lab':entry.source==='sophia'?'badge-sophia':entry.source==='rct'?'badge-rct':entry.source==='sleep'?'badge-sleep':entry.source==='divination'?'badge-div':entry.source==='field_lens'?('badge-fl'+(flDemo?' demo':'')):'badge-manual';
+      const icon=entry.source==='coherence_lab'?'\u2b21':entry.source==='sophia'?'\u{1F52E}':entry.source==='rct'?'\u{1F9E0}':entry.source==='sleep'?'\u{1F319}':entry.source==='divination'?'\u4DCA':entry.source==='field_lens'?'\u2665':'\u270F\uFE0F';
       const dateStr=fmtDate(entry.session_date);
       const summary=entry.summary_line||'Session';
       // Load mood_change from context if available
       let moodHtml='';
       h+='<div class="history-row" onclick="nav(\'detail\',\''+entry.session_id+'\')">';
-      h+='<div class="source-badge '+badge+'">'+icon+'</div>';
+      h+='<div class="source-badge '+badge+'"'+(flDemo?' title="Demo: made-up heartbeats"':'')+'>'+icon+'</div>';
       h+='<div class="row-body">';
       h+='<div class="row-date">'+dateStr+'</div>';
       h+='<div class="row-summary">'+escHtml(summary)+'</div>';
@@ -578,6 +598,7 @@ function renderDetail(sessionId){
   else if(rec.source==='rct') h+=renderSourceRCT(rec);
   else if(rec.source==='sleep') h+=renderSourceSleep(rec);
   else if(rec.source==='divination') h+=renderSourceDivination(rec);
+  else if(rec.source==='field_lens') h+=renderSourceFieldLens(rec);
   else h+=renderSourceManual(rec);
   h+='</div>';
 
@@ -1321,6 +1342,146 @@ function renderDivinationImportSummary(info){
   return h;
 }
 
+// ─── Field Lens session ───
+// The phone's own clock at a moment of the session (the session date follows it too).
+function flClockLabel(iso,offset){
+  const ms=Date.parse(iso||'');
+  if(!isFinite(ms)) return '';
+  const opts={month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'};
+  if(typeof offset==='number') return new Date(ms+offset*60000).toLocaleString('en-US',Object.assign({timeZone:'UTC'},opts));
+  return new Date(ms).toLocaleString('en-US',opts);
+}
+
+function flMinSec(s){
+  if(typeof s!=='number'||!isFinite(s)) return null;
+  const r=Math.round(s);
+  return Math.floor(r/60)+' min '+(r%60)+' sec';
+}
+
+// Rounded half up, as Field Lens rounds (0.185 → 0.19).
+function flNum(v,places,unit){if(typeof v!=='number')return null;const k=Math.pow(10,places);return (Math.round(v*k)/k).toFixed(places)+(unit?' '+unit:'');}
+
+// Coherence (0–1) across the session; gaps where the rhythm wasn't read yet.
+function renderFieldLensSparkline(sd){
+  const pts=FieldLensImport.sparkPoints(sd.coherence,160);
+  if(!pts.some(function(v){return v!=null;})) return '';
+  const W=320,H=48,n=pts.length;
+  const yFor=function(v){return (H-2-v*(H-4)).toFixed(1);};
+  let d='',pen=false;
+  pts.forEach(function(v,i){
+    if(v==null){pen=false;return;}
+    const x=(n>1?i/(n-1)*W:W/2).toFixed(1);
+    d+=(pen?'L':'M')+x+' '+yFor(v)+' ';
+    pen=true;
+  });
+  let svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Coherence over the session, 0 to 1">';
+  svg+='<line x1="0" y1="'+yFor(1)+'" x2="'+W+'" y2="'+yFor(1)+'" stroke="#1a1520" stroke-width="1" vector-effect="non-scaling-stroke"/>';
+  svg+='<line x1="0" y1="'+yFor(0)+'" x2="'+W+'" y2="'+yFor(0)+'" stroke="#1a1520" stroke-width="1" vector-effect="non-scaling-stroke"/>';
+  svg+='<path d="'+d.trim()+'" fill="none" stroke="#d4a574" stroke-width="1.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>';
+  svg+='</svg>';
+  const dur=sd.summary&&sd.summary.duration_seconds;
+  return '<div class="fl-spark">'+svg+'<div class="fl-spark-cap"><span>start</span><span>coherence, 0 to 1</span><span>'+(typeof dur==='number'?Math.round(dur/60)+' min':'end')+'</span></div></div>';
+}
+
+function renderSourceFieldLens(rec){
+  const sd=rec.source_data||{};
+  const sum=sd.summary||{};
+  const demo=FieldLensImport.isDemo(rec);
+  let h='<h2>Field Lens Session'+(demo?' (demo)':'')+'</h2>';
+  if(demo) h+='<div class="fl-demo">Demo heartbeat: these beats were made up by Field Lens’s demo mode, not measured from a heart. Every number below comes from them.</div>';
+  const started=flClockLabel(sd.started_at,sd.utc_offset_minutes);
+  const ended=flClockLabel(sd.ended_at,sd.utc_offset_minutes);
+  if(started) h+='<div class="src-meta">Started: <span class="sv">'+escHtml(started)+'</span></div>';
+  if(ended) h+='<div class="src-meta">Ended: <span class="sv">'+escHtml(ended)+'</span></div>';
+  h+='<div class="src-meta">Heartbeat: <span class="sv">'+escHtml(FieldLensImport.heartbeatLabel(sd.heartbeat_source)||'—')+'</span></div>';
+
+  h+='<div class="section-title">Heart'+(demo?' (demo)':'')+'</div>';
+  h+='<div class="metric-grid">';
+  h+=metricRow('Duration',flMinSec(sum.duration_seconds));
+  h+=metricRow('Beats',typeof sum.beats==='number'?sum.beats:null);
+  h+=metricRow('Mean heart rate',flNum(sum.mean_hr,1,'bpm'));
+  h+=metricRow('Breaths a minute',flNum(sum.mean_breaths_per_minute,1));
+  h+='</div>';
+
+  h+='<div class="section-title">Coherence'+(demo?' (demo)':'')+'</div>';
+  h+='<div class="metric-grid">';
+  h+=metricRow('Peak',flNum(sum.peak_coherence,2));
+  h+=metricRow('Mean',flNum(sum.mean_coherence,2));
+  let coh=flMinSec(sum.coherent_seconds);
+  if(coh&&sum.duration_seconds>0) coh+=' ('+Math.round(sum.coherent_seconds/sum.duration_seconds*100)+'%)';
+  h+=metricRow('Coherent time',coh);
+  h+='</div>';
+  h+=renderFieldLensSparkline(sd);
+
+  h+='<div class="section-title">Room and Hands</div>';
+  h+='<div class="metric-grid">';
+  h+=metricRow('Room field, mean',flNum(sum.mean_room_ut,1,'µT'));
+  h+=metricRow('Room field, range',flNum(sum.room_range_ut,2,'µT'));
+  h+=metricRow('Thumbs on the plates',flMinSec(sum.held_seconds));
+  h+=metricRow('Mean stillness',flNum(sum.mean_stillness,2));
+  h+='</div>';
+
+  const ecgN=Array.isArray(sd.ecg_uv)?sd.ecg_uv.length:0;
+  if(ecgN) h+='<div class="src-meta">Raw ECG kept: <span class="sv">'+ecgN+' samples ('+flMinSec(ecgN/130)+' at 130 Hz)</span></div>';
+  else if(sd.ecg_dropped) h+='<div class="src-meta">Raw ECG: <span class="sv">left out</span> (longer than an hour, or unreadable)</div>';
+
+  h+='<div class="verdict">The room’s field is measured by the phone’s magnetometer (its compass). Heart rate, coherence (the heart rhythm’s HRV coherence, 0 to 1) and breaths are read from the heartbeats. For reflection only: nothing here is a diagnosis.</div>';
+  h+='<div style="margin-top:12px;font-size:10px;color:var(--dim);font-style:italic">Auto-populated from Aetheria Field Lens. To annotate, use the Notes field. Importing a newer export updates the session and keeps what you typed here.</div>';
+  return h;
+}
+
+function renderFieldLensImportDialog(fi){
+  const total=fi.totalCount||0,newCount=fi.newCount||0,updCount=fi.updatedCount||0,sameCount=fi.unchangedCount||0,skipCount=fi.skippedCount||0;
+  const demos=FieldLensImport.demoCount(fi.incoming||[]);
+  const range=FieldLensImport.sessionDateRange(fi.incoming||[]);
+  const rangeStr=(range.first&&range.last)?(fmtDate(range.first)+(range.first!==range.last?' – '+fmtDate(range.last):'')):'';
+  const exported=fi.exportDate?new Date(fi.exportDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
+  const line='font-size:11px;color:var(--sub);text-align:center;margin-bottom:3px';
+  let h='<div class="import-dup" style="border-color:var(--ros)"><h3 style="color:var(--ros)">Field Lens Export Detected</h3>';
+  h+='<div style="font-size:10px;color:var(--sub);text-align:center;margin-bottom:4px">Aetheria Field Lens · heart and room sessions from the phone</div>';
+  if(exported) h+='<div style="font-size:10px;color:var(--sub);text-align:center;margin-bottom:8px">'+(fi.exportCount>1?'Latest export':'Exported')+': <span style="color:var(--txt)">'+exported+'</span></div>';
+  h+='<div style="font-size:11px;color:var(--sub);text-align:center;margin-bottom:6px">Found <span style="color:var(--gld)">'+total+'</span> session'+(total!==1?'s':'')+(rangeStr?' ('+rangeStr+')':'')+'</div>';
+  h+='<div style="'+line+'">├ <span style="color:var(--grn)">'+newCount+' new session'+(newCount!==1?'s':'')+'</span></div>';
+  if(updCount>0) h+='<div style="'+line+'">├ <span style="color:var(--ros)">'+updCount+' to update</span> <span style="color:var(--dim)">(Field Lens’s changes merged; your edits kept)</span></div>';
+  h+='<div style="'+line+';margin-bottom:8px">└ <span style="color:var(--dim)">'+sameCount+' already up to date</span></div>';
+  if(demos>0) h+='<div style="font-size:10px;color:var(--ora);text-align:center;margin-bottom:8px">'+demos+' of these '+(demos!==1?'are demo sessions':'is a demo session')+' (made-up heartbeats), marked as demo</div>';
+  if(skipCount>0){
+    h+='<div style="font-size:10px;color:var(--ora);text-align:center;margin-bottom:8px">'+skipCount+' couldn’t be read and will be skipped ('+escHtml(fi.skipped[0].reason)+(skipCount>1?', …':'')+')</div>';
+  }
+  const acts=[];
+  if(newCount) acts.push('Import '+newCount+' new');
+  if(updCount) acts.push((newCount?'update ':'Update ')+updCount);
+  h+='<div class="dup-btns">';
+  if(acts.length) h+='<button class="btn btn-sm" style="flex:1;border-color:var(--ros);color:var(--ros)" onclick="fieldLensImportConfirm()">'+acts.join(' · ')+'</button>';
+  else h+='<button class="btn btn-sm" style="flex:1;opacity:.4;pointer-events:none">Nothing new to import</button>';
+  h+='<button class="btn btn-sm btn-red" style="flex:1" onclick="fieldLensImportCancel()">Cancel</button>';
+  h+='</div></div>';
+  return h;
+}
+
+function renderFieldLensImportSummary(info){
+  const imported=info.imported||[],updated=info.updated||[];
+  const all=imported.concat(updated);
+  const range=FieldLensImport.sessionDateRange(all);
+  const rangeStr=(range.first&&range.last)?(fmtDate(range.first)+(range.first!==range.last?' – '+fmtDate(range.last):'')):'';
+  const demos=FieldLensImport.demoCount(all);
+  const parts=[];
+  if(imported.length) parts.push(imported.length+' Field Lens session'+(imported.length!==1?'s':'')+' imported');
+  if(updated.length) parts.push(updated.length+' updated');
+  let h='<div class="import-summary" style="border-color:var(--ros)">';
+  h+='<h3 style="color:var(--ros)">'+(parts.length?'✓ '+parts.join(' · '):'Nothing new to import')+'</h3>';
+  if(rangeStr) h+='<div class="is-line">Date range: <span class="is-val">'+rangeStr+'</span></div>';
+  if(all.length) h+='<div class="is-line">Session time: <span class="is-val">'+fmtHm(FieldLensImport.totalSeconds(all)/60)+'</span></div>';
+  if(demos) h+='<div class="is-line" style="color:var(--ora)">'+demos+' demo session'+(demos!==1?'s':'')+' (made-up heartbeats), marked as demo</div>';
+  if(info.unchangedCount) h+='<div class="is-line">'+info.unchangedCount+' already up to date</div>';
+  if(info.failed&&info.failed.length) h+='<div class="is-line" style="color:var(--ora)">'+info.failed.length+' couldn’t be saved ('+escHtml(info.failed[0].reason)+')</div>';
+  h+='<div class="btn-row" style="justify-content:center">';
+  if(all.length===1) h+='<button class="btn btn-sm" style="border-color:var(--ros);color:var(--ros)" onclick="state.lastImportSummary=null;nav(\'detail\',\''+escHtml(all[0].session_id)+'\')">View session</button>';
+  h+='<button class="btn btn-sm" onclick="state.lastImportSummary=null;render()">Dismiss</button>';
+  h+='</div></div>';
+  return h;
+}
+
 function renderSourceManual(rec){
   const sd=rec.source_data||{};
   let h='<h2>Manual Session</h2>';
@@ -1431,7 +1592,8 @@ function effectiveSessionStats(rec){
 
 function computeStats(){
   const all=TaggerStore.listAllSessions();
-  const enriched=all.map(effectiveSessionStats);
+  // A Field Lens demo's heartbeats are made up, so it is left out of these statistics.
+  const enriched=all.filter(r=>!FieldLensImport.isDemo(r)).map(effectiveSessionStats);
 
   // Date range across all sessions
   const dates=enriched.map(s=>s.session_date).filter(Boolean).sort();
@@ -1488,8 +1650,14 @@ function computeStats(){
   const readings=all.filter(r=>r.source==='divination');
   const divination={count:readings.length,tally:DivinationImport.mirrorTally(readings)};
 
+  // Field Lens sessions: the real ones, and how many demos were left out
+  const lens=all.filter(r=>r.source==='field_lens');
+  const lensReal=lens.filter(r=>!FieldLensImport.isDemo(r));
+  const fieldLens={count:lensReal.length,seconds:FieldLensImport.totalSeconds(lensReal),demos:lens.length-lensReal.length};
+
   return {
     divination:divination,
+    fieldLens:fieldLens,
     totalSessions:        enriched.length,
     sessionsWithCoherence:cohSeries.length,
     firstDate:firstDate,lastDate:lastDate,daySpan:daySpan,
@@ -1649,6 +1817,16 @@ function renderStats(){
       h+='<div class="stat-line"><span>Honest Mirror: the reading fit</span><span class="sv">'+t.hits+' of '+t.answered+' ('+Math.round(t.hits/t.answered*100)+'%)</span></div>';
       h+='<div class="stat-line" style="font-size:10px;color:var(--dim)"><span>By chance alone, about half would fit.</span></div>';
     }
+    h+='</div>';
+  }
+
+  // ── Field Lens ──
+  if(s.fieldLens.count>0||s.fieldLens.demos>0){
+    const fl=s.fieldLens;
+    h+='<div class="stat-card"><h3>Field Lens</h3>';
+    h+='<div class="stat-line"><span>Sessions logged</span><span class="sv">'+fl.count+'</span></div>';
+    if(fl.count) h+='<div class="stat-line"><span>Time with the lens</span><span class="sv">'+fmtHm(fl.seconds/60)+'</span></div>';
+    if(fl.demos) h+='<div class="stat-line" style="font-size:10px;color:var(--dim)"><span>'+fl.demos+' demo session'+(fl.demos!==1?'s':'')+' (made-up heartbeats) left out of all these statistics.</span></div>';
     h+='</div>';
   }
 
@@ -1814,10 +1992,11 @@ function importJSONText(text){
   if(SleepImport.detectSleepFormat(obj)){handleSleepImport(text);return;}
   // Divination exports (and its journal backups, which get a pointer to the right export).
   if(DivinationImport.detectDivinationFormat(obj)){handleDivinationImport(text);return;}
+  if(FieldLensImport.detectFieldLensFormat(obj)){handleFieldLensImport(text);return;}
   if(CoherenceLabImport.detectCoherenceLabFormat(obj)!==null){importLabJSON(text);return;}
   if(SophiaImport.detectSophiaFormat(obj)){handleSophiaImport(text);return;}
   if(RCTImport.detectRCTFormat(obj)){handleRCTImport(text);return;}
-  alert("This doesn't match any known Aetheria format. Supported: Coherence Lab JSON, Sophia JSON, RCT JSON, Sleep JSON, Divination JSON.");
+  alert("This doesn't match any known Aetheria format. Supported: Coherence Lab JSON, Sophia JSON, RCT JSON, Sleep JSON, Divination JSON, Field Lens JSON.");
 }
 
 function importLabJSON(text){
@@ -1912,6 +2091,44 @@ window.divinationImportConfirm=function(){
 };
 window.divinationImportCancel=function(){state.divinationImport=null;state.divinationTexts=null;render();};
 
+function handleFieldLensImport(text){
+  const result=FieldLensImport.importFieldLensFile(text);
+  if(result.status==='error'){alert(result.error);return;}
+  // Several exports chosen together (or another one before confirming) come in as one import;
+  // a session in more than one file keeps its copy from the newest export (the importer's own rule).
+  const texts=(state.fieldLensImport&&state.fieldLensTexts)?state.fieldLensTexts.concat([text]):[text];
+  let combined=result;
+  if(texts.length>1){
+    const env=Object.assign({},JSON.parse(texts[0]),{sessions:[].concat.apply([],texts.map(function(t){return JSON.parse(t).sessions;}))});
+    env.session_count=env.sessions.length;
+    // Dated by the newest of the exports (files chosen together are read in any order).
+    texts.forEach(function(t){
+      const at=JSON.parse(t).exported_at;
+      const cur=typeof env.exported_at==='string'?Date.parse(env.exported_at):NaN;
+      if(typeof at==='string'&&!isNaN(Date.parse(at))&&!(cur>=Date.parse(at))) env.exported_at=at;
+    });
+    combined=FieldLensImport.importFieldLensFile(JSON.stringify(env));
+    if(combined.status==='error'){alert(combined.error);return;}
+    combined.exportCount=texts.length;
+  }
+  state.fieldLensTexts=texts;
+  state.fieldLensImport=combined;
+  // A Sophia, RCT or Divination dialog still open is its own import, so it stays.
+  state.lastImportSummary=null;state.importDuplicate=null;
+  render();
+}
+
+// New sessions are added; sessions already here are merged (never duplicated),
+// keeping everything typed in the Tagger.
+window.fieldLensImportConfirm=function(){
+  const fi=state.fieldLensImport;if(!fi)return;
+  const out=FieldLensImport.commitFieldLensImport(fi);
+  state.fieldLensImport=null;state.fieldLensTexts=null;
+  state.lastImportSummary={type:'field_lens',imported:out.imported,updated:out.updated,unchangedCount:out.unchangedCount,failed:out.failed};
+  render();
+};
+window.fieldLensImportCancel=function(){state.fieldLensImport=null;state.fieldLensTexts=null;render();};
+
 function handleSleepImport(text){
   const result=SleepImport.importSleepFile(text);
   if(result.status==='error'){alert(result.error);return;}
@@ -1956,10 +2173,11 @@ function _exportCounts(){
   const sophia=all.filter(function(r){return r.source==='sophia';});
   const rct=all.filter(function(r){return r.source==='rct';});
   const divination=all.filter(function(r){return r.source==='divination';});
+  const fieldLens=all.filter(function(r){return r.source==='field_lens';});
   const manual=all.filter(function(r){return r.source==='manual';});
   var snapCount=0;
   sophia.forEach(function(r){snapCount+=(r.source_data&&r.source_data.snapshots)?r.source_data.snapshots.length:0;});
-  return{all:all,lab:lab,sophia:sophia,rct:rct,divination:divination,manual:manual,total:all.length,snapCount:snapCount};
+  return{all:all,lab:lab,sophia:sophia,rct:rct,divination:divination,fieldLens:fieldLens,manual:manual,total:all.length,snapCount:snapCount};
 }
 
 function renderExportModal(){
@@ -1975,6 +2193,7 @@ function renderExportModal(){
   h+=_exportOption('sophiaSnaps','Sophia snapshots (long)',c.snapCount);
   h+=_exportOption('rct','RCT sessions',c.rct.length);
   h+=_exportOption('divination','Divination readings',c.divination.length);
+  h+=_exportOption('fieldLens','Field Lens sessions',c.fieldLens.length);
   h+=_exportOption('manual','Manual',c.manual.length);
 
   h+='<div class="modal-section">Combined</div>';
@@ -2005,7 +2224,7 @@ function _exportOption(key,label,count){
 
 window.openExportModal=function(){
   state.showExportModal=true;
-  state.exportSelection={lab:false,sophia:false,sophiaSnaps:false,rct:false,divination:false,manual:false,unified:false,json:false};
+  state.exportSelection={lab:false,sophia:false,sophiaSnaps:false,rct:false,divination:false,fieldLens:false,manual:false,unified:false,json:false};
   render();
 };
 window.closeExportModal=function(e){
@@ -2017,13 +2236,13 @@ window.exportSelectAll=function(){
   var c=_exportCounts();
   state.exportSelection={
     lab:c.lab.length>0,sophia:c.sophia.length>0,
-    sophiaSnaps:c.snapCount>0,rct:c.rct.length>0,divination:c.divination.length>0,manual:c.manual.length>0,
+    sophiaSnaps:c.snapCount>0,rct:c.rct.length>0,divination:c.divination.length>0,fieldLens:c.fieldLens.length>0,manual:c.manual.length>0,
     unified:c.total>0,json:c.total>0
   };
   render();
 };
 window.exportClearAll=function(){
-  state.exportSelection={lab:false,sophia:false,sophiaSnaps:false,rct:false,divination:false,manual:false,unified:false,json:false};
+  state.exportSelection={lab:false,sophia:false,sophiaSnaps:false,rct:false,divination:false,fieldLens:false,manual:false,unified:false,json:false};
   render();
 };
 window.executeExport=function(){
@@ -2037,6 +2256,7 @@ window.executeExport=function(){
   if(sel.sophiaSnaps&&c.snapCount)downloads.push({content:TaggerExport.exportSophiaSnapshotsCSV(c.sophia),name:'aetheria-sophia-snapshots_'+today+'.csv',mime:'text/csv'});
   if(sel.rct&&c.rct.length)downloads.push({content:TaggerExport.exportRCTCSV(c.rct),name:'aetheria-rct-sessions_'+today+'.csv',mime:'text/csv'});
   if(sel.divination&&c.divination.length)downloads.push({content:TaggerExport.exportDivinationCSV(c.divination),name:'aetheria-divination-readings_'+today+'.csv',mime:'text/csv'});
+  if(sel.fieldLens&&c.fieldLens.length)downloads.push({content:TaggerExport.exportFieldLensCSV(c.fieldLens),name:'aetheria-field-lens-sessions_'+today+'.csv',mime:'text/csv'});
   if(sel.manual&&c.manual.length)downloads.push({content:TaggerExport.exportManualCSV(c.manual),name:'aetheria-manual-sessions_'+today+'.csv',mime:'text/csv'});
   if(sel.unified&&c.total)downloads.push({content:TaggerExport.exportUnifiedCSV(c.all),name:'aetheria-unified_'+today+'.csv',mime:'text/csv'});
   if(sel.json&&c.total)downloads.push({content:TaggerExport.exportFullJSON(c.all),name:'aetheria-full_'+today+'.json',mime:'application/json'});
